@@ -1,7 +1,7 @@
 ---
-name: "Define Objectives"
-about: "Template for creating tasks related to the 'Define Objectives' subphase"
-title: "Define Objectives-"
+name: Define Objectives
+about: Template for creating tasks related to the 'Define Objectives' subphase
+title: Define Objectives-
 labels: enhancement
 assignees: ''
 
