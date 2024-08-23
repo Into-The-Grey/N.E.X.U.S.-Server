@@ -1,0 +1,4 @@
+# Python virtual environment
+nexus_venv/
+.vscode/settings.json
+.env
