@@ -1,27 +1,11 @@
-# calendar_service.py
-
-import logging
 import os
 from datetime import datetime
 import psycopg2
 from dotenv import load_dotenv
+from logger import logger  # Importing the logger from the logger module
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Configure logging
-logger = logging.getLogger(__name__)
-
-# Ensure that the log directory exists within the core's directory structure
-log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logging")
-os.makedirs(log_dir, exist_ok=True)
-
-log_file = os.path.join(log_dir, "calendar.log")
-handler = logging.FileHandler(log_file)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
 
 # PostgreSQL database connection details
 db_host = os.getenv("DB_HOST")
@@ -30,6 +14,8 @@ db_name = os.getenv("DB_NAME")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 
+# Log path
+log_path = "/home/ncacord/N.E.X.U.S.-Server/cores/autonomy-core/logging/calendar.log"
 
 # Function to create the necessary tables if they don't exist
 def create_tables():
