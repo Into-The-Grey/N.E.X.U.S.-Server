@@ -111,3 +111,38 @@ def view_events():
     except Exception as se:
         logger.error(f"Failed to retrieve events: {str(se)}")
         return f"Failed to retrieve events: {str(se)}"
+
+# Function to update an event
+def update_event(event_id, new_event_name, new_event_date_str):
+    try:
+        # Parse the new event date
+        new_event_date = datetime.strptime(new_event_date_str, "%Y-%m-%d").date()
+
+        with psycopg2.connect(
+            host=db_host,
+            port=db_port,
+            database=db_name,
+            user=db_user,
+            password=db_password,
+        ) as conn:
+            with conn.cursor() as cursor:
+                update_query = """
+                UPDATE events 
+                SET event_name = %s, event_date = %s 
+                WHERE event_id = %s
+                """
+                cursor.execute(update_query, (new_event_name, new_event_date, event_id))
+                conn.commit()
+
+        logger.info(f"Event with ID {event_id} updated to '{new_event_name}' on {new_event_date}")
+        return f"Event with ID {event_id} updated successfully."
+    except psycopg2.Error as pe:
+        logger.error(f"Error updating event in database: {str(pe)}")
+        return "Failed to update event in the database"
+    except ValueError as ve:
+        logger.error(f"Error parsing date: {str(ve)}")
+        return "Failed to update event: Invalid date format"
+    except Exception as e:
+        logger.error(f"Error updating event: {str(e)}")
+        return "Failed to update event"
+    
