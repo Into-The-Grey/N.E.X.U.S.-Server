@@ -33,6 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("cont_logger")
 
+
 # Function to validate email format
 def validate_email(email):
     if "@" not in email or "." not in email.split("@")[-1]:
@@ -227,7 +228,8 @@ def search_contacts(field, value):
         return f"Failed to search contacts by {field} = {value}"
     finally:
         conn.close()
-        
+
+
 # Function to list all contacts
 def list_contacts():
     conn = get_db_connection()
@@ -250,7 +252,8 @@ def list_contacts():
         return "Failed to retrieve contacts"
     finally:
         conn.close()
-        
+
+
 # Function to list all favorite contacts
 def list_favorite_contacts():
     conn = get_db_connection()
@@ -273,4 +276,3 @@ def list_favorite_contacts():
         return "Failed to retrieve favorite contacts"
     finally:
         conn.close()
-        
