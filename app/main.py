@@ -46,10 +46,12 @@ def get_db_connection():
             user=db_user,
             password=db_password,
         )
-        logger.info("N.E.X.U.S.-Core to N.E.X.U.S.-Client ESTABLISHED")
+        logger.info("N.E.X.U.S.-Sever to N.E.X.U.S.-Database ESTABLISHED")
         return conn
     except psycopg2.Error as pe:
-        logger.error(f"N.E.X.U.S.-Core connection was NOT ESTABLISHED: {str(pe)}")
+        logger.error(
+            f"N.E.X.U.S.-Sever to N.E.X.U.S.-Database connection was NOT ESTABLISHED: {str(pe)}"
+        )
         return None
 
 
@@ -126,27 +128,31 @@ def should_log_message(message: str) -> bool:
 async def websocket_endpoint(websocket: WebSocket):
     global server_running
     await websocket.accept()
+
+    # Log the connection establishment
+    logger.info("N.E.X.U.S.-Sever to N.E.X.U.S.-Client ESTABLISHED")
+
     try:
         while True:
             data = await asyncio.wait_for(websocket.receive_text(), timeout=10)
             if data == "STOP_SERVER":
                 server_running = False
-                logger.info("Server stopped by client request.")
-                await websocket.send_text("Server stopped.")
+                logger.info("N.E.X.U.S.-Sever stopped by N.E.X.U.S.-Client request.")
+                await websocket.send_text("N.E.X.U.S.-Sever stopped.")
             elif data == "START_SERVER":
                 server_running = True
-                logger.info("Server started by client request.")
+                logger.info("N.E.X.U.S.-Sever started by N.E.X.U.S.-Client request.")
             else:
                 if server_running:
                     if should_log_message(data):
                         logger.info(f"Message received: {data}")
                     await websocket.send_text(f"Message received: {data}")
                 else:
-                    await websocket.send_text("Server is currently stopped.")
+                    await websocket.send_text("N.E.X.U.S.-Sever is currently stopped.")
     except asyncio.TimeoutError:
         logger.info("WebSocket receive timeout")
     except WebSocketDisconnect:
-        logger.info("Client disconnected")
+        logger.info("N.E.X.U.S.-Client disconnected")
 
 
 if __name__ == "__main__":
