@@ -7,7 +7,7 @@ from logger import logger  # Importing the logger from the logger module
 # Load environment variables from .env file
 load_dotenv()
 
-# PostgreSQL database connection details
+# PostgreSQL database connection detailsSELECT successfully executed.
 db_host = os.getenv("DB_HOST")
 db_port = os.getenv("DB_PORT")
 db_name = os.getenv("DB_NAME")
