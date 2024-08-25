@@ -44,7 +44,7 @@ venv.bak/
 *.ipr
 
 # Environments
-.env
+*.env
 .venv
 
 # PyInstaller
