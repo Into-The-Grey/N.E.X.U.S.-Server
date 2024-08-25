@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime
 import psycopg2
+from psycopg2 import sql
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -33,6 +34,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# Function to validate email format
+def validate_email(email):
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return False
+    return True
+
+
+# Function to validate phone number format
+def validate_phone(phone):
+    if len(phone) < 10 or not phone.isdigit():
+        return False
+    return True
+
+
+# Function to establish a database connection
 def get_db_connection():
     try:
         conn = psycopg2.connect(
@@ -48,6 +64,7 @@ def get_db_connection():
         return None
 
 
+# Function to add a contact to the database
 def add_contact(
     first_name,
     last_name,
@@ -66,6 +83,14 @@ def add_contact(
     tags=None,
     is_favorite=False,
 ):
+    # Validate email and phone number
+    if not validate_email(email):
+        logger.error(f"Invalid email format: {email}")
+        return f"Invalid email format: {email}"
+    if not validate_phone(phone):
+        logger.error(f"Invalid phone number: {phone}")
+        return f"Invalid phone number: {phone}"
+
     conn = get_db_connection()
     if conn is None:
         return "Failed to connect to the database"
@@ -107,6 +132,7 @@ def add_contact(
         conn.close()
 
 
+# Function to view a contact by ID
 def view_contact(contact_id):
     conn = get_db_connection()
     if conn is None:
@@ -130,6 +156,7 @@ def view_contact(contact_id):
         conn.close()
 
 
+# Function to update a contact by ID
 def update_contact(contact_id, **kwargs):
     conn = get_db_connection()
     if conn is None:
@@ -155,6 +182,7 @@ def update_contact(contact_id, **kwargs):
         conn.close()
 
 
+# Function to delete a contact by ID
 def delete_contact(contact_id):
     conn = get_db_connection()
     if conn is None:
@@ -174,19 +202,29 @@ def delete_contact(contact_id):
         conn.close()
 
 
-# Example usage
-if __name__ == "__main__":
-    print(
-        add_contact(
-            "John",
-            "Doe",
-            "johndoe@example.com",
-            "555-1234",
-            city="New York",
-            state="NY",
-            country="USA",
-        )
-    )
-    print(view_contact(1))
-    print(update_contact(1, first_name="Jonathan", city="Los Angeles"))
-    print(delete_contact(1))
+# Function to search contacts by a given field and value
+def search_contacts(field, value):
+    conn = get_db_connection()
+    if conn is None:
+        return "Failed to connect to the database"
+
+    try:
+        with conn.cursor() as cursor:
+            search_query = sql.SQL("SELECT * FROM contacts WHERE {} = %s").format(
+                sql.Identifier(field)
+            )
+            cursor.execute(search_query, (value,))
+            contacts = cursor.fetchall()
+            if contacts:
+                logger.info(
+                    f"Found {len(contacts)} contact(s) matching {field} = {value}"
+                )
+                return contacts
+            else:
+                logger.info(f"No contacts found matching {field} = {value}")
+                return f"No contacts found matching {field} = {value}"
+    except psycopg2.Error as pe:
+        logger.error(f"Error searching contacts in the database: {str(pe)}")
+        return f"Failed to search contacts by {field} = {value}"
+    finally:
+        conn.close()
