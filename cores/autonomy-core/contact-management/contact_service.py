@@ -31,8 +31,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-logger = logging.getLogger(__name__)
-
+logger = logging.getLogger("cont_logger")
 
 # Function to validate email format
 def validate_email(email):
@@ -228,3 +227,50 @@ def search_contacts(field, value):
         return f"Failed to search contacts by {field} = {value}"
     finally:
         conn.close()
+        
+# Function to list all contacts
+def list_contacts():
+    conn = get_db_connection()
+    if conn is None:
+        return "Failed to connect to the database"
+
+    try:
+        with conn.cursor() as cursor:
+            select_query = "SELECT * FROM contacts"
+            cursor.execute(select_query)
+            contacts = cursor.fetchall()
+            if contacts:
+                logger.info(f"Retrieved {len(contacts)} contacts.")
+                return contacts
+            else:
+                logger.info("No contacts found.")
+                return "No contacts found."
+    except psycopg2.Error as pe:
+        logger.error(f"Error retrieving contacts from the database: {str(pe)}")
+        return "Failed to retrieve contacts"
+    finally:
+        conn.close()
+        
+# Function to list all favorite contacts
+def list_favorite_contacts():
+    conn = get_db_connection()
+    if conn is None:
+        return "Failed to connect to the database"
+
+    try:
+        with conn.cursor() as cursor:
+            select_query = "SELECT * FROM contacts WHERE is_favorite = TRUE"
+            cursor.execute(select_query)
+            contacts = cursor.fetchall()
+            if contacts:
+                logger.info(f"Retrieved {len(contacts)} favorite contacts.")
+                return contacts
+            else:
+                logger.info("No favorite contacts found.")
+                return "No favorite contacts found."
+    except psycopg2.Error as pe:
+        logger.error(f"Error retrieving favorite contacts from the database: {str(pe)}")
+        return "Failed to retrieve favorite contacts"
+    finally:
+        conn.close()
+        
