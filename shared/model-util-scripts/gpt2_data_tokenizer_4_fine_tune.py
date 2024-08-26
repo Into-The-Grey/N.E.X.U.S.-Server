@@ -17,7 +17,7 @@ tokenizer = AutoTokenizer.from_pretrained("gpt2")
 datasets = DatasetDict(
     {
         "train": load_dataset(dataset_name, split="train[:90%]"),
-        "validation": load_dataset(dataset_name, split="validation[:10%]"),
+        "validation": load_dataset(dataset_name, split="train[90%:]"),
     }
 )
 
