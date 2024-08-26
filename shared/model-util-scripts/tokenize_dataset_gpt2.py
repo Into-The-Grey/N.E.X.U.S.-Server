@@ -24,8 +24,12 @@ datasets = DatasetDict(
 
 # Tokenize the datasets
 def tokenize_function(examples):
+    # Ensure the tokenizer has a pad token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
     return tokenizer(
-        examples["dialog"],
+        examples["dialog", "act", "emotion"],
         truncation=True,
         padding="max_length",
         max_length=block_size,
