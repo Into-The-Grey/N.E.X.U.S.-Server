@@ -134,8 +134,12 @@ package-lock.json
 .Spotlight-V100
 .Trashes
 
+# Model Directories
 albert-xxlarge-v2/
 gpt2/
+whisper-tiny.en
+
 
 Knowledge_Base
 shared/data/datasets/
+
