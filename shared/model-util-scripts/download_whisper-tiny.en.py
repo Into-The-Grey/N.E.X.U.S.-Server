@@ -1,8 +1,11 @@
 import torch
-from transformers import WhisperForConditionalGeneration, BitsAndBytesConfig
+from transformers import (
+    WhisperForConditionalGeneration,
+    WhisperProcessor,
+    BitsAndBytesConfig,
+)
 import os
 import logging
-import shutil
 
 # Set the directory path where you want to store the Whisper model
 model_directory_path = "/home/ncacord/N.E.X.U.S.-Server/shared/models/whisper-tiny.en"
@@ -37,16 +40,17 @@ def log_directory_size(directory):
     logging.info(f"Total model directory size: {size_in_mb:.2f} MB")
 
 
-def save_model_with_retry(model, save_path, retries=0):
+def save_model_and_processor_with_retry(model, processor, save_path, retries=0):
     try:
         model.save_pretrained(save_path)
-        logging.info(f"Model successfully saved to '{save_path}'")
+        processor.save_pretrained(save_path)
+        logging.info(f"Model and processor successfully saved to '{save_path}'")
         log_directory_size(save_path)
     except Exception as e:
         if retries < max_retries:
             retries += 1
             logging.warning(f"Retrying save... Attempt {retries}/{max_retries}")
-            save_model_with_retry(model, save_path, retries)
+            save_model_and_processor_with_retry(model, processor, save_path, retries)
         else:
             logging.error(
                 f"Failed to save model after {max_retries} attempts. Error: {str(e)}"
@@ -61,10 +65,11 @@ try:
         quantization_config=quantization_config,
         device_map="auto",
     )
-    logging.info("Model successfully loaded with 8-bit quantization.")
+    processor = WhisperProcessor.from_pretrained("openai/whisper-tiny.en")
+    logging.info("Model and processor successfully loaded with 8-bit quantization.")
 
-    # Save the quantized model with retry logic
-    save_model_with_retry(model, model_directory_path)
+    # Save the quantized model and processor with retry logic
+    save_model_and_processor_with_retry(model, processor, model_directory_path)
 
 except FileNotFoundError as e:
     os.makedirs(model_directory_path, exist_ok=True)
@@ -78,10 +83,11 @@ except FileNotFoundError as e:
         quantization_config=quantization_config,
         device_map="auto",
     )
+    processor = WhisperProcessor.from_pretrained("openai/whisper-tiny.en")
     logging.info(
-        "Model successfully loaded with 8-bit quantization after directory creation."
+        "Model and processor successfully loaded with 8-bit quantization after directory creation."
     )
-    save_model_with_retry(model, model_directory_path)
+    save_model_and_processor_with_retry(model, processor, model_directory_path)
 except NotADirectoryError as e:
     logging.error(
         f"Model directory '{model_directory_path}' is not a valid directory. Original exception: {str(e)}"
@@ -99,9 +105,10 @@ except NotADirectoryError as e:
         quantization_config=quantization_config,
         device_map="auto",
     )
+    processor = WhisperProcessor.from_pretrained("openai/whisper-tiny.en")
     logging.info(
-        "Model successfully loaded with 8-bit quantization after new directory creation."
+        "Model and processor successfully loaded with 8-bit quantization after new directory creation."
     )
-    save_model_with_retry(model, model_directory_path)
+    save_model_and_processor_with_retry(model, processor, model_directory_path)
 except Exception as e:
     logging.exception(f"An error occurred: {str(e)}")
