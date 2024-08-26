@@ -7,14 +7,14 @@ import random
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
 from fastapi.websockets import WebSocketDisconnect
+from fastapi import BackgroundTasks
 from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 
 # Load environment variables
 load_dotenv(
     dotenv_path="/home/ncacord/N.E.X.U.S.-Server/nexus.env", verbose=True, override=True
 )
-
-app = FastAPI()
 
 # Configure logging
 log_file = "/home/ncacord/N.E.X.U.S.-Server/app/logs/websocket_server.log"
@@ -55,6 +55,17 @@ def get_db_connection():
         return None
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup event: Execute tasks needed at server startup
+    asyncio.create_task(log_telemetry_periodically())
+    yield
+    # Shutdown event: Clean up or shutdown tasks here, if needed
+
+
+app = FastAPI(lifespan=lifespan)
+
+
 @app.get("/")
 async def get():
     return HTMLResponse(
@@ -71,7 +82,7 @@ async def get():
             <script>
                 let socket;
                 function connect() {
-                    socket = new WebSocket("ws://localhost:8000/ws");
+                    socket = new WebSocket("ws://192.168.1.147:8000/ws");
                     socket.onmessage = function(event) {
                         alert("Message from server: " + event.data);
                     }
@@ -108,20 +119,22 @@ def should_log_message(message: str) -> bool:
     Returns:
         bool: True if the message should be logged, False otherwise.
     """
-    # Simple conditions to log errors or important messages
     if "error" in message.lower() or "important" in message.lower():
         return True
 
-    # Randomly log 1 out of every 5 messages to prevent excessive logging
     if random.randint(1, 5) == 1:
         return True
 
-    # Log messages that are particularly short or long as they may be unusual
     if len(message) < 10 or len(message) > 100:
         return True
 
-    # If none of the conditions are met, don't log the message
     return False
+
+
+async def log_telemetry_periodically():
+    while True:
+        logger.info("N.E.X.U.S.-Server telemetry log: Server is running.")
+        await asyncio.sleep(300)
 
 
 @app.websocket("/ws")
@@ -129,7 +142,6 @@ async def websocket_endpoint(websocket: WebSocket):
     global server_running
     await websocket.accept()
 
-    # Log the connection establishment
     logger.info("N.E.X.U.S.-Sever to N.E.X.U.S.-Client ESTABLISHED")
 
     try:
@@ -156,7 +168,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 if __name__ == "__main__":
-    # Test database connection on startup
     db_conn = get_db_connection()
     if db_conn:
         db_conn.close()
+
+    import uvicorn
+
+    uvicorn.run(app, host="192.168.1.147", port=8000)
