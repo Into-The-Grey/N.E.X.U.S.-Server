@@ -6,10 +6,9 @@ from tqdm import tqdm
 from datasets import load_from_disk
 import torch.distributed as dist
 import torch.multiprocessing as mp
-
-# Load environment variables (if necessary)
 from dotenv import load_dotenv
 
+# Load environment variables (if necessary)
 load_dotenv()
 
 # Set the model and tokenizer
@@ -29,7 +28,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 # Load the tokenized dataset
-dataset_name = "daily_dialog"
+dataset_name = (
+    "new_dataset"  # Change this to match the dataset name used in tokenization
+)
 tokenized_dataset_path = (
     f"/home/ncacord/N.E.X.U.S.-Server/shared/data/tokenized_datasets/{dataset_name}"
 )
@@ -49,14 +50,14 @@ class HuggingFaceDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        return {key: val[idx] for key, val in self.dataset.items()}
+        return {key: torch.tensor(val[idx]) for key, val in self.dataset.items()}
 
 
 # Convert tokenized datasets to PyTorch Dataset
 pytorch_train_dataset = HuggingFaceDataset(tokenized_train)
 pytorch_val_dataset = HuggingFaceDataset(tokenized_val)
 
-# Create DataLoaders for your PyTorch datasets with progress bars
+# Create DataLoaders for your PyTorch datasets
 train_dataloader = DataLoader(
     pytorch_train_dataset, shuffle=True, batch_size=batch_size
 )
