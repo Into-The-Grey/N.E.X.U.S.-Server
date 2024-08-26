@@ -1,107 +1,121 @@
 import os
 import torch
-from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
-from tqdm import tqdm
+from torch.utils.data import Dataset, DataLoader
+from transformers import AutoModelForCausalLM, AutoTokenizer, AdamW
 from datasets import load_from_disk
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from dotenv import load_dotenv
 
-# Load environment variables (if necessary)
-load_dotenv()
+# Set the paths for the GPT-2 model and the tokenized dataset
+model_path = "/home/ncacord/N.E.X.U.S.-Server/shared/models/gpt2"
+dataset_path = "/home/ncacord/N.E.X.U.S.-Server/shared/data/tokenized_datasets/oasst1"
 
-# Set the model and tokenizer
-model_name = "gpt2"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name)
+# Set the path for the log directory and file
+log_file = "/home/ncacord/N.E.X.U.S.-Server/shared/logs/fine_tuning.log"
 
-# Set the block size and batch size
-block_size = 128
-batch_size = 8
+# Initialize the tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+model = AutoModelForCausalLM.from_pretrained(model_path)
 
-# Initialize multi-GPU training
-if torch.cuda.device_count() > 1:
-    model = torch.nn.DataParallel(model)
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Enable CUDA if available
+device = torch.device(torch.cuda.is_available() and "cuda" or "cpu")
 model.to(device)
 
 # Load the tokenized dataset
-dataset_name = (
-    "new_dataset"  # Change this to match the dataset name used in tokenization
-)
-tokenized_dataset_path = (
-    f"/home/ncacord/N.E.X.U.S.-Server/shared/data/tokenized_datasets/{dataset_name}"
-)
-tokenized_datasets = load_from_disk(tokenized_dataset_path)
-
-# Split into train and validation datasets
-tokenized_train = tokenized_datasets["train"]
-tokenized_val = tokenized_datasets["validation"]
+dataset = load_from_disk(dataset_path)
 
 
-# Convert HuggingFace Dataset to PyTorch Dataset
-class HuggingFaceDataset(Dataset):
-    def __init__(self, hf_dataset):
-        self.dataset = hf_dataset
+# Define your custom dataset class
+class CustomDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        return {key: torch.tensor(val[idx]) for key, val in self.dataset.items()}
+        item = self.data[idx]
+        return {
+            "input_ids": torch.tensor(item["input_ids"], dtype=torch.long),
+            "attention_mask": torch.tensor(item["attention_mask"]),
+            "labels": torch.tensor(item["labels"]),
+        }
 
 
-# Convert tokenized datasets to PyTorch Dataset
-pytorch_train_dataset = HuggingFaceDataset(tokenized_train)
-pytorch_val_dataset = HuggingFaceDataset(tokenized_val)
+# Create an instance of your custom dataset
+custom_dataset = CustomDataset(dataset)
 
-# Create DataLoaders for your PyTorch datasets
-train_dataloader = DataLoader(
-    pytorch_train_dataset, shuffle=True, batch_size=batch_size
-)
-val_dataloader = DataLoader(pytorch_val_dataset, shuffle=False, batch_size=batch_size)
+# Create a data loader for batching and shuffling
+data_loader = DataLoader(custom_dataset, batch_size=16, shuffle=True)
 
-train_dataloader = tqdm(train_dataloader, desc="Training Progress")
-val_dataloader = tqdm(val_dataloader, desc="Validation Progress")
 
-# Training arguments
-training_args = TrainingArguments(
-    output_dir="/home/ncacord/N.E.X.U.S.-Server/shared/data/training_results",
-    evaluation_strategy="steps",
-    save_steps=10_000,
-    save_total_limit=2,
-    num_train_epochs=3,
-    per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
-    warmup_steps=500,
-    weight_decay=0.01,
-    logging_dir="/home/ncacord/N.E.X.U.S.-Server/shared/logs",
-    logging_steps=10,
-    fp16=True,
-)
+# Define the training loop
+def train():
+    # Set the model to training mode
+    model.train()
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=pytorch_train_dataset,
-    eval_dataset=pytorch_val_dataset,
-    tokenizer=tokenizer,
-)
+    # Define the optimizer
+    learning_rate = 1e-5  # Set the desired learning rate here
+    optimizer = AdamW(model.parameters(), lr=learning_rate)
 
-# Training loop with progress bars
-print("Starting fine-tuning process...")
-trainer.train()
+    # Define the number of epochs
+    num_epochs = 10  # Replace 10 with the desired number of epochs
+    
+    # Define the gradient accumulation steps
+    gradient_accumulation_steps = 1  # Replace 1 with the desired number of gradient accumulation steps
+    
+    # Start the training loop
+    for epoch in range(num_epochs):
+        accumulated_loss = 0
+        for batch_idx, batch in enumerate(data_loader):
+            # Move the batch to the device
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+    
+            # Forward pass
+            outputs = model(
+                input_ids=input_ids, attention_mask=attention_mask, labels=labels
+            )
+    
+            # Compute the loss
+            loss = outputs.loss
+    
+            # Accumulate the loss
+            accumulated_loss += loss
+    
+            if (batch_idx + 1) % gradient_accumulation_steps == 0:
+                # Backward pass and optimization
+                optimizer.zero_grad()
+                accumulated_loss.backward()
+                optimizer.step()
+    
+                # Log the loss
+                with open(log_file, "a") as f:
+                    f.write(f"Epoch {epoch+1}, Batch {batch_idx+1}, Loss: {accumulated_loss.item()}\n")
+    
+            # Close the log file
+            f.close()
+    
+            # Reset the accumulated loss
+            accumulated_loss = 0
+    
+        # Check if there are remaining accumulated gradients
+        if accumulated_loss != 0:
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            accumulated_loss.backward()
+            optimizer.step()
+    
+            # Log the loss
+            with open(log_file, "a") as f:
+                f.write(f"Epoch {epoch+1}, Batch {batch_idx+1}, Loss: {accumulated_loss.item()}\n")
 
-# Save the model
-save_model = input(
-    "Would you like to save, this will overwrite the current model? (y/n): "
-)
-if save_model.lower() == "y":
-    print("Saving model...")
-    trainer.save_model(model_name)
-    tokenizer.save_pretrained(model_name)
-    print("Model saved.")
-else:
-    print("Exiting without saving.")
+
+# Run the training loop
+try:
+    train()
+except Exception as e:
+    # Handle any exceptions and log the error
+    with open(log_file, "a") as f:
+        f.write(f"Error: {str(e)}\n")
+    # Print the error message to the console
+    print(f"Error: {str(e)}")
