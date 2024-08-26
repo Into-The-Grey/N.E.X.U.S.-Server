@@ -1,42 +1,47 @@
 import os
-from datasets import load_dataset, DatasetDict
+import pandas as pd
 from transformers import AutoTokenizer
+from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 
 # Load environment variables (if necessary)
 load_dotenv()
 
-# Set the dataset path
-dataset_path = "Isotonic/human_assistant_conversation"
-
-# Extract the dataset name from the path
-dataset_name = dataset_path.split("/")[-1]
-
+# Set the dataset name
+dataset_name = "human_assistant_conversation"
 # Set the block size
 block_size = 128
 
 # Initialize the tokenizer
 tokenizer = AutoTokenizer.from_pretrained("gpt2")
 
-# Load the dataset with training and validation splits
-datasets = DatasetDict(
-    {
-        "train": load_dataset(dataset_path, split="train[:90%]"),
-        "validation": load_dataset(dataset_path, split="train[90%:]"),
-    }
-)
+# Load the CSV files
+train_csv_path = "/home/ncacord/N.E.X.U.S.-Server/shared/data/datasets/human_assistant_conversation/train.csv"
+test_csv_path = "/home/ncacord/N.E.X.U.S.-Server/shared/data/datasets/human_assistant_conversation/test.csv"
+
+train_df = pd.read_csv(train_csv_path)
+test_df = pd.read_csv(test_csv_path)
+
+# Create Hugging Face datasets from the DataFrames
+train_dataset = Dataset.from_pandas(train_df)
+test_dataset = Dataset.from_pandas(test_df)
+
+# Combine into a DatasetDict
+datasets = DatasetDict({"train": train_dataset, "validation": test_dataset})
 
 
 # Tokenize the datasets
 def tokenize_function(examples):
+    # Ensure the tokenizer has a pad token
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
     return tokenizer(
-        examples["text"],  # Adjust the key to match the new dataset
+        examples["prompt"] + examples["response"],
         truncation=True,
         padding="max_length",
         max_length=block_size,
+        clean_up_tokenization_spaces=True,
     )
 
 
