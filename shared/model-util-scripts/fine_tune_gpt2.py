@@ -147,11 +147,7 @@ def train():
                 loss = outputs.loss
         
                 # Remove the redundant check for "attention_mask"
-                # if "attention_mask" not in batch:
-                    logging.error("Key 'attention_mask' not found in batch.")
-                    attention_mask = torch.ones_like(input_ids)  # Provide a default attention mask
-                else:
-                    attention_mask = batch["attention_mask"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
