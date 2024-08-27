@@ -9,11 +9,16 @@ from transformers import (
     AutoModelForMaskedLM,
 )
 from response_filters.strict_format import strict_format
-from feedback_collector import collect_feedback
-from parameter_manager import (
+from shared.manuel_tuned_gpt2.management_scripts.feedback_manager import (
+    collect_feedback,
+)
+from shared.manuel_tuned_gpt2.management_scripts.parameter_manager import (
     set_generation_parameter,
     get_generation_parameters,
     explain_generation_parameters,
+)
+from shared.manuel_tuned_gpt2.management_scripts.nca_personal_info_manager import (
+    get_personal_detail,
 )
 from dotenv import load_dotenv
 
@@ -141,6 +146,12 @@ def apply_filters(response):
 def generate_response(prompt):
     try:
         logging.info(f"Processing prompt: {prompt}")
+
+        # Replace placeholders in the prompt with personal details
+        prompt = prompt.replace("{last_name}", get_personal_detail("last_name"))
+        prompt = prompt.replace("{first_name}", get_personal_detail("first_name"))
+        prompt = prompt.replace("{birthday}", get_personal_detail("birthday"))
+        prompt = prompt.replace("{address}", get_personal_detail("address"))
 
         # Analyze input with ALBERT before generating response with GPT-2
         analysis = analyze_input_with_albert(prompt)
