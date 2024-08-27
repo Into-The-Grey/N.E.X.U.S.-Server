@@ -145,4 +145,5 @@ shared/data/datasets/
 
 # Ignore all .csv files
 *.csv
-/shared/manuel_tuned_gpt2/config/personal_related_config/nca_personal_info.json
+
+nca_personal_info.json
