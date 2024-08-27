@@ -11,9 +11,7 @@ load_dotenv(
 )
 
 # Configure logging
-logging_dir = os.environ.get(
-    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
-)
+logging_dir = "LOGGING_DIR"
 log_file_name = "param_manager.log"  # Set the name of the log file here
 log_file_path = os.path.join(logging_dir, log_file_name)
 
@@ -37,7 +35,7 @@ generation_parameters = {
     "max_length": 50,  # Maximum length of the generated sequence
 }
 
-feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/interaction_data.csv"
+feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/feedback/interaction_data.csv"
 
 
 def set_generation_parameter(param_name, value):

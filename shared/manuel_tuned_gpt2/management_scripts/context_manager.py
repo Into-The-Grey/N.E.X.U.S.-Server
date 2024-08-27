@@ -3,7 +3,6 @@ import os
 
 # Paths for storing context data
 context_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_context_memory/context_data.csv"
-os.makedirs(os.path.dirname(context_file), exist_ok=True)
 
 class ContextManager:
     """Manages the session context for better prompt generation."""

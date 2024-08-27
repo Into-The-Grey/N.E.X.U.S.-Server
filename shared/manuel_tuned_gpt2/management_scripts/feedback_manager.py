@@ -4,13 +4,10 @@ import os
 from transformers import pipeline
 
 # File path for storing feedback
-feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/interaction_data.csv"
-os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
+feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/feedback/interaction_data.csv"
 
 # Configure logging
-logging_dir = os.environ.get(
-    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
-)
+logging_dir = "LOGGING_DIR"
 log_file_name = "feedback_manager.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)
 

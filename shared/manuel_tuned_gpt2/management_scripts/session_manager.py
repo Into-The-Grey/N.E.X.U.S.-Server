@@ -15,9 +15,7 @@ context_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_c
 session_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_context_memory/session_data.csv"
 
 # Configure logging
-logging_dir = os.environ.get(
-    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
-)
+logging_dir = "LOGGING_DIR"
 log_file_name = "session_manager.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)
 

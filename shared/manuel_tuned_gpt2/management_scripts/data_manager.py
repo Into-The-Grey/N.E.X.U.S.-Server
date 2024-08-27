@@ -1,7 +1,7 @@
 import pandas as pd
 
 # File path for the feedback data
-feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/interaction_data.csv"
+feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/feedback/interaction_data.csv"
 filtered_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/high_quality_data.csv"
 
 
