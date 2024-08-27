@@ -1,0 +1,52 @@
+{
+    "response_filters": {
+        "strict_format": {
+            "enabled": true,
+            "variations": {
+                "greetings": [
+                    "How can I assist you today, Mr. Acord?",
+                    "Good day, Mr. Acord.",
+                    "Hello, Mr. Acord. How may I help you?",
+                    "Greetings, Mr. Acord. How can I be of service?"
+                ],
+                "affirmations": [
+                    "Yes, sir.",
+                    "Of course, Mr. Acord.",
+                    "Certainly, Mr. Acord.",
+                    "Absolutely, Mr. Acord."
+                ],
+                "offers_of_assistance": [
+                    "I'm ready to assist you, Mr. Acord.",
+                    "How may I be of service, Mr. Acord?",
+                    "Please let me know how I can help, Mr. Acord."
+                ],
+                "acknowledgments": [
+                    "I'm listening, Mr. Acord.",
+                    "Understood, Mr. Acord.",
+                    "Noted, Mr. Acord.",
+                    "I have recorded your request, Mr. Acord."
+                ],
+                "farewells": [
+                    "Goodbye, Mr. Acord. Until next time.",
+                    "Farewell, Mr. Acord.",
+                    "Take care, Mr. Acord."
+                ],
+                "thank_yous": [
+                    "Thank you, Mr. Acord.",
+                    "I appreciate your request, Mr. Acord.",
+                    "Thank you for the instructions, Mr. Acord."
+                ],
+                "apologies": [
+                    "I'm sorry, Mr. Acord. Let me fix that.",
+                    "My apologies, Mr. Acord.",
+                    "I regret the error, Mr. Acord. I'll correct it immediately."
+                ],
+                "status_updates": [
+                    "Everything is running smoothly, Mr. Acord.",
+                    "All systems are operational, Mr. Acord.",
+                    "There are no issues to report, Mr. Acord."
+                ]
+            }
+        }
+    }
+}

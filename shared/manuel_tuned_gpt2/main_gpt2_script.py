@@ -31,6 +31,7 @@ load_dotenv(
 gpt2_model_path = os.getenv("GPT_MODEL_PATH")
 albert_model_path = os.getenv("ALBERT_MODEL_PATH")
 response_config_path = os.getenv("RESPONSE_CONFIG")
+sentiment_response_config_path = os.getenv("SENTIMENT_RESPONSE_CONFIG")
 
 # Configure logging
 logging_dir = os.environ.get(
@@ -106,7 +107,26 @@ def load_response_config(response_config_path):
         exit(1)
 
 
+# Load the sentiment response config file
+def load_sentiment_response_config(sentiment_response_config_path):
+    if os.path.exists(sentiment_response_config_path):
+        try:
+            with open(sentiment_response_config_path, "r") as file:
+                return json.load(file)
+        except Exception as e:
+            logging.error(f"Error loading sentiment response config file: {e}")
+            exit(1)
+    else:
+        logging.error(
+            f"Sentiment response config file not found at {sentiment_response_config_path}"
+        )
+        exit(1)
+
+
 response_config = load_response_config(response_config_path)
+sentiment_response_config = load_sentiment_response_config(
+    sentiment_response_config_path
+)
 
 
 def analyze_input_with_albert(prompt):
