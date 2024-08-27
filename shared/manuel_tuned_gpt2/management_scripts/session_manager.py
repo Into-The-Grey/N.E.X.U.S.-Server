@@ -15,15 +15,10 @@ context_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_c
 session_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_context_memory/session_data.csv"
 
 # Configure logging
-logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs")
+logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/logs")
 log_file_name = "session_manager.log"  # Custom log file name for this script
-log_file_path = os.path.join("LOGGING_DIR", log_file_name)
+log_file_path = os.path.join(logging_dir, log_file_name)
 
-# Create the directory for the log file if it doesn't exist
-if not os.path.exists(os.path.dirname(log_file_path)):
-    os.makedirs(
-        os.path.dirname(log_file_path), exist_ok=True
-    )  # Ensure directory creation with exist_ok=True
 
 logging.basicConfig(
     filename=log_file_path,

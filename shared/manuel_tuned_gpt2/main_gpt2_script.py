@@ -3,6 +3,7 @@ import logging
 import argparse
 import os
 import sys
+from transformers import pipeline
 from management_scripts.context_manager import context_manager
 from management_scripts.session_manager import session_manager
 from transformers import (
@@ -35,15 +36,10 @@ response_config_path = os.getenv("RESPONSE_CONFIG")
 sentiment_response_config_path = os.getenv("SENTIMENT_RESPONSE_CONFIG")
 
 # Configure logging
-logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs")
+logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/logs")
 log_file_name = "gpt2_sudo_tuned.log"  # Custom log file name for this script
-log_file_path = os.path.join("LOGGING_DIR", log_file_name)
+log_file_path = os.path.join(logging_dir, log_file_name)
 
-# Create the directory for the log file if it doesn't exist
-if not os.path.exists(os.path.dirname(log_file_path)):
-    os.makedirs(
-        os.path.dirname(log_file_path), exist_ok=True
-    )  # Ensure directory creation with exist_ok=True
 
 logging.basicConfig(
     filename=log_file_path,
@@ -160,6 +156,10 @@ def apply_filters(response):
         return response
 
 
+# Load sentiment analysis model with specified device
+sentiment_analyzer = pipeline("sentiment-analysis", device=0)  # Set device=0 for GPU
+
+
 def generate_response(prompt):
     try:
         logging.info(f"Processing prompt: {prompt}")
@@ -179,8 +179,11 @@ def generate_response(prompt):
             temperature=params["temperature"],
             top_k=params["top_k"],
             top_p=params["top_p"],
+            do_sample=True,  # Enable sampling if using top_p or top_k
         )
-        response = gpt2_tokenizer.decode(outputs[0], skip_special_tokens=True)
+        response = gpt2_tokenizer.decode(
+            outputs[0], skip_special_tokens=True, clean_up_tokenization_spaces=True
+        )
         logging.info(f"Generated response for prompt '{prompt}': {response}")
 
         # Add the interaction to the session memory
