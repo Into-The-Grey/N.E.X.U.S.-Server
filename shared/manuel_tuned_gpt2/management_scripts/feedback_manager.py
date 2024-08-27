@@ -1,5 +1,9 @@
 import csv
 import os
+from shared.manuel_tuned_gpt2.management_scripts.parameter_manager import (
+    adjust_parameters_based_on_feedback,
+    calculate_average_feedback,
+)
 
 # File path for storing feedback
 feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/interaction_data.csv"
@@ -29,6 +33,11 @@ def collect_feedback(user_input, model_response):
     print(f"Model Response: {model_response}")
     rating = ask_for_rating()
     save_interaction(user_input, model_response, rating)
+
+    # Adjust parameters based on feedback
+    avg_feedback = calculate_average_feedback(feedback_file)
+    if avg_feedback:
+        adjust_parameters_based_on_feedback(avg_feedback)
 
 
 if __name__ == "__main__":

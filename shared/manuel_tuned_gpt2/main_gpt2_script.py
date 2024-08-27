@@ -3,13 +3,16 @@ import logging
 import argparse
 import os
 import sys
+from management_scripts.context_manager import context_manager
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     AutoModelForMaskedLM,
 )
 from response_filters.strict_format import strict_format
-from shared.manuel_tuned_gpt2.management_scripts.feedback_manager import collect_feedback
+from shared.manuel_tuned_gpt2.management_scripts.feedback_manager import (
+    collect_feedback,
+)
 from shared.manuel_tuned_gpt2.management_scripts.parameter_manager import (
     set_generation_parameter,
     get_generation_parameters,
@@ -145,9 +148,12 @@ def generate_response(prompt):
         # Analyze input with ALBERT before generating response with GPT-2
         analysis = analyze_input_with_albert(prompt)
 
+        # Incorporate context into the prompt
+        contextual_prompt = context_manager.get_contextual_prompt(prompt)
+
         # Generate response with dynamic parameters
         params = get_generation_parameters()
-        inputs = gpt2_tokenizer(prompt, return_tensors="pt")
+        inputs = gpt2_tokenizer(contextual_prompt, return_tensors="pt")
         outputs = gpt2_model.generate(
             **inputs,
             max_length=params["max_length"],
@@ -157,6 +163,10 @@ def generate_response(prompt):
         )
         response = gpt2_tokenizer.decode(outputs[0], skip_special_tokens=True)
         logging.info(f"Generated response for prompt '{prompt}': {response}")
+
+        # Add the interaction to the context
+        context_manager.add_to_context(prompt, response)
+
         return apply_filters(response)
     except Exception as e:
         logging.error(f"Error generating response: {e}")
@@ -168,7 +178,32 @@ def main():
     parser.add_argument(
         "prompt", type=str, help="The prompt for generating a response."
     )
+    parser.add_argument(
+        "--set_param",
+        nargs=2,
+        metavar=("param_name", "value"),
+        help="Set a generation parameter (e.g., --set_param temperature 0.8)",
+    )
+    parser.add_argument(
+        "--explain_params",
+        action="store_true",
+        help="Explain the current generation parameters.",
+    )
     args = parser.parse_args()
+
+    if args.set_param:
+        param_name, value = args.set_param
+        try:
+            value = float(value) if "." in value else int(value)
+            set_generation_parameter(param_name, value)
+            print(f"Set {param_name} to {value}.")
+        except ValueError:
+            print(f"Invalid value for {param_name}: {value}")
+        return
+
+    if args.explain_params:
+        explain_generation_parameters()
+        return
 
     prompt = args.prompt.strip()
     if not prompt:
