@@ -143,7 +143,4 @@ whisper-tiny.en
 Knowledge_Base
 shared/data/datasets/
 
-# Ignore all .csv files
-*.csv
-
-nca_personal_info.json
+personal_related_config/
