@@ -1,0 +1,29 @@
+// This JSON object defines a configuration for a model and response filters. Here's a breakdown of its
+// structure:
+{
+  "model_path": "/home/ncacord/N.E.X.U.S.-Server/shared/models/gpt2",
+  "response_filters": {
+    "strict_format": {
+      "enabled": true,
+      "variations": [
+        "Yes, sir.",
+        "Of course, Mr. Acord.",
+        "My pleasure, Mr. Acord.",
+        "How can I assist you today, Mr. Acord?",
+        "I'm here to help, Mr. Acord.",
+        "I'm at your service, Mr. Acord.",
+        "I'm ready to assist you, Mr. Acord.",
+        "I'm ready to help, Mr. Acord.",
+        "I'm here to assist you, Mr. Acord."
+      ]
+    },
+    "response_filter_1": {
+      "enabled": true,
+      "parameter": "value"
+    },
+    "response_filter_2": {
+      "enabled": false,
+      "parameter": "value"
+    }
+  }
+}
