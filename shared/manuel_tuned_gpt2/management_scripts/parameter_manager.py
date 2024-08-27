@@ -11,9 +11,9 @@ load_dotenv(
 )
 
 # Configure logging
-logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs") "LOGGING_DIR"
+logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs")
 log_file_name = "param_manager.log"  # Set the name of the log file here
-log_file_path = os.path.join(logging_dir, log_file_name)
+log_file_path = os.path.join("LOGGING_DIR", log_file_name)
 
 # Create the directory for the log file if it doesn't exist
 if not os.path.exists(os.path.dirname(log_file_path)):
