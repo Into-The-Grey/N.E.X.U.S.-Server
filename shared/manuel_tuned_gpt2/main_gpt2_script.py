@@ -53,8 +53,8 @@ logging.info("Starting models...")
 # Load GPT-2 model and tokenizer
 def load_gpt2_model_and_tokenizer(gpt2_model_path):
     try:
-        gpt2_model = AutoModelForCausalLM.from_pretrained(gpt2_model_path)
-        gpt2_tokenizer = AutoTokenizer.from_pretrained(gpt2_model_path)
+        gpt2_model = AutoModelForCausalLM.from_pretrained(gpt2_model_path, local_files_only=True)
+        gpt2_tokenizer = AutoTokenizer.from_pretrained(gpt2_model_path, local_files_only=True)
         logging.info(f"GPT-2 model and tokenizer loaded from {gpt2_model_path}.")
         return gpt2_model, gpt2_tokenizer
     except Exception as e:
@@ -80,8 +80,8 @@ elif not os.path.exists(albert_model_path):
     exit(1)
 
 try:
-    albert_model = AutoModelForMaskedLM.from_pretrained(albert_model_path)
-    albert_tokenizer = AutoTokenizer.from_pretrained(albert_model_path)
+    albert_model = AutoModelForMaskedLM.from_pretrained(albert_model_path, local_files_only=True)
+    albert_tokenizer = AutoTokenizer.from_pretrained(albert_model_path, local_files_only=True)
     logging.info(f"ALBERT model and tokenizer loaded from {albert_model_path}.")
 except Exception as e:
     logging.error(f"Error loading ALBERT model or tokenizer: {e}")
@@ -157,7 +157,10 @@ def apply_filters(response):
 
 
 # Load sentiment analysis model with specified device
-sentiment_analyzer = pipeline("sentiment-analysis", device=0)  # Set device=0 for GPU
+import torch
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+sentiment_analyzer = pipeline("sentiment-analysis", device=device)
 
 
 def generate_response(prompt):
@@ -230,7 +233,7 @@ def main():
             set_generation_parameter(param_name, value)
             print(f"Set {param_name} to {value}.")
         except ValueError:
-            print(f"Invalid value for {param_name}: {value}")
+            print(f"Invalid value for {param_name}: {value}. Please provide a valid numeric value.")
         return
 
     if args.explain_params:
