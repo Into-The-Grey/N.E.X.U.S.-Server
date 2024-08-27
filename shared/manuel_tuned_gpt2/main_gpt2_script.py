@@ -36,7 +36,7 @@ sentiment_response_config_path = os.getenv("SENTIMENT_RESPONSE_CONFIG")
 
 # Configure logging
 logging_dir = os.environ.get(
-    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
+    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/logs"
 )
 log_file_name = "gpt2_sudo_tuned.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)

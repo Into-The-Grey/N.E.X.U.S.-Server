@@ -2,7 +2,7 @@ import csv
 from collections import defaultdict
 
 # File path for loading feedback
-feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/feedback/interaction_data.csv"
+feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/feedback/interaction_data.csv"
 
 
 def analyze_feedback():
