@@ -3,6 +3,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv(
     dotenv_path="/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/chatbot.env",
     verbose=True,
@@ -12,6 +13,7 @@ load_dotenv(
 # Paths for storing session data
 context_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_context_memory/context_data.csv"
 session_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/model_context_memory/session_data.csv"
+
 # Configure logging
 logging_dir = os.environ.get(
     "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
@@ -41,33 +43,53 @@ class SessionManager:
 
     def load_session_memory(self):
         """Loads session memory from a file, if it exists."""
-        if os.path.exists(session_file):
-            with open(session_file, "r") as file:
-                reader = csv.reader(file)
-                self.session_memory = [row for row in reader]
+        try:
+            if os.path.exists(session_file):
+                with open(session_file, "r") as file:
+                    reader = csv.reader(file)
+                    self.session_memory = [row for row in reader]
+                    logging.info("Session memory loaded successfully.")
+            else:
+                logging.info("Session file not found; starting with empty memory.")
+        except Exception as e:
+            logging.error(f"Error loading session memory: {e}")
 
     def save_session_memory(self):
         """Saves the current session memory to a file."""
-        with open(session_file, "w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerows(self.session_memory)
+        try:
+            with open(session_file, "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerows(self.session_memory)
+                logging.info("Session memory saved successfully.")
+        except Exception as e:
+            logging.error(f"Error saving session memory: {e}")
 
     def add_to_session(self, prompt, response):
         """Adds a new interaction to the session memory."""
-        self.session_memory.append([prompt, response])
-        if (
-            len(self.session_memory) > 10
-        ):  # Limit session memory to last 10 interactions
-            self.session_memory.pop(0)
-        self.save_session_memory()
+        try:
+            self.session_memory.append([prompt, response])
+            if (
+                len(self.session_memory) > 10
+            ):  # Limit session memory to last 10 interactions
+                self.session_memory.pop(0)
+            self.save_session_memory()
 
-        # Log the interaction
-        logging.info(f"New interaction: Prompt='{prompt}', Response='{response}'")
+            # Log the interaction
+            logging.info(
+                f"New interaction added: Prompt='{prompt}', Response='{response}'"
+            )
+        except Exception as e:
+            logging.error(f"Error adding to session: {e}")
 
     def get_contextual_prompt(self, prompt):
         """Creates a contextual prompt based on the session memory."""
-        context = " ".join([f"User: {p} Bot: {r}" for p, r in self.session_memory])
-        return f"{context} User: {prompt}"
+        try:
+            context = " ".join([f"User: {p} Bot: {r}" for p, r in self.session_memory])
+            logging.info("Contextual prompt created.")
+            return f"{context} User: {prompt}"
+        except Exception as e:
+            logging.error(f"Error creating contextual prompt: {e}")
+            return prompt  # Return the original prompt if there's an error
 
 
 session_manager = SessionManager()

@@ -4,16 +4,17 @@ import argparse
 import os
 import sys
 from management_scripts.context_manager import context_manager
+from management_scripts.session_manager import session_manager
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     AutoModelForMaskedLM,
 )
 from response_filters.strict_format import strict_format
-from shared.manuel_tuned_gpt2.management_scripts.feedback_manager import (
+from management_scripts.feedback_manager import (
     collect_feedback,
 )
-from shared.manuel_tuned_gpt2.management_scripts.parameter_manager import (
+from management_scripts.parameter_manager import (
     set_generation_parameter,
     get_generation_parameters,
     explain_generation_parameters,
@@ -168,8 +169,8 @@ def generate_response(prompt):
         # Analyze input with ALBERT before generating response with GPT-2
         analysis = analyze_input_with_albert(prompt)
 
-        # Incorporate context into the prompt
-        contextual_prompt = context_manager.get_contextual_prompt(prompt)
+        # Incorporate session context into the prompt
+        contextual_prompt = session_manager.get_contextual_prompt(prompt)
 
         # Generate response with dynamic parameters
         params = get_generation_parameters()
@@ -184,10 +185,15 @@ def generate_response(prompt):
         response = gpt2_tokenizer.decode(outputs[0], skip_special_tokens=True)
         logging.info(f"Generated response for prompt '{prompt}': {response}")
 
-        # Add the interaction to the context
-        context_manager.add_to_context(prompt, response)
+        # Add the interaction to the session memory
+        session_manager.add_to_session(prompt, response)
 
         return apply_filters(response)
+    except MemoryError:
+        logging.error(
+            "Memory error during response generation. Try reducing max_length or other parameters."
+        )
+        return "I'm sorry, there was a memory issue processing your request."
     except Exception as e:
         logging.error(f"Error generating response: {e}")
         return "I'm sorry, something went wrong with processing your request."
@@ -209,6 +215,11 @@ def main():
         action="store_true",
         help="Explain the current generation parameters.",
     )
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Run the model in a loop to continuously process prompts.",
+    )
     args = parser.parse_args()
 
     if args.set_param:
@@ -223,6 +234,24 @@ def main():
 
     if args.explain_params:
         explain_generation_parameters()
+        return
+
+    if args.loop:
+        print("Entering loop mode. Type 'exit' to stop.")
+        while True:
+            try:
+                prompt = input("Enter your prompt: ")
+                if prompt.lower() == "exit":
+                    break
+                if not prompt.strip():
+                    print("Input is empty. Please provide a valid prompt.")
+                    continue
+                response = generate_response(prompt)
+                print(response)
+                collect_feedback(prompt, response)
+            except KeyboardInterrupt:
+                print("\nExiting loop mode.")
+                break
         return
 
     prompt = args.prompt.strip()
