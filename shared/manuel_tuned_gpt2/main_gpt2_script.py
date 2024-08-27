@@ -31,12 +31,25 @@ load_dotenv(
 
 # Load paths from the .env file
 gpt2_model_path = os.getenv("GPT_MODEL_PATH")
+# Remove redundant check for gpt2_model_path
+# Remove redundant check for gpt2_model_path
 albert_model_path = os.getenv("ALBERT_MODEL_PATH")
+# Remove redundant check for albert_model_path
 response_config_path = os.getenv("RESPONSE_CONFIG")
+if response_config_path is None:
+    logging.error("Response config path not specified in environment variables.")
+    exit(1)
 sentiment_response_config_path = os.getenv("SENTIMENT_RESPONSE_CONFIG")
+if sentiment_response_config_path is None:
+    logging.error(
+        "Sentiment response config path not specified in environment variables."
+    )
+    exit(1)
 
 # Configure logging
-logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/logs")
+logging_dir = os.getenv(
+    "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/logs"
+)
 log_file_name = "gpt2_sudo_tuned.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)
 
@@ -45,6 +58,7 @@ logging.basicConfig(
     filename=log_file_path,
     level=logging.INFO,
     format="%(asctime)s %(levelname)s: %(message)s",
+    force=True,
 )
 
 logging.info("Starting models...")
@@ -53,8 +67,12 @@ logging.info("Starting models...")
 # Load GPT-2 model and tokenizer
 def load_gpt2_model_and_tokenizer(gpt2_model_path):
     try:
-        gpt2_model = AutoModelForCausalLM.from_pretrained(gpt2_model_path, local_files_only=True)
-        gpt2_tokenizer = AutoTokenizer.from_pretrained(gpt2_model_path, local_files_only=True)
+        gpt2_model = AutoModelForCausalLM.from_pretrained(
+            gpt2_model_path, local_files_only=True
+        )
+        gpt2_tokenizer = AutoTokenizer.from_pretrained(
+            gpt2_model_path, local_files_only=True
+        )
         logging.info(f"GPT-2 model and tokenizer loaded from {gpt2_model_path}.")
         return gpt2_model, gpt2_tokenizer
     except Exception as e:
@@ -65,7 +83,7 @@ def load_gpt2_model_and_tokenizer(gpt2_model_path):
 if not gpt2_model_path:
     logging.error("GPT-2 model path not specified in environment variables.")
     exit(1)
-elif not os.path.exists(gpt2_model_path):
+elif gpt2_model_path is None or not os.path.exists(gpt2_model_path):
     logging.error(f"Invalid GPT-2 model path: {gpt2_model_path}")
     exit(1)
 
@@ -75,13 +93,17 @@ gpt2_model, gpt2_tokenizer = load_gpt2_model_and_tokenizer(gpt2_model_path)
 if not albert_model_path:
     logging.error("ALBERT model path not specified in environment variables.")
     exit(1)
-elif not os.path.exists(albert_model_path):
+elif albert_model_path is None or not os.path.exists(albert_model_path):
     logging.error(f"Invalid ALBERT model path: {albert_model_path}")
     exit(1)
 
 try:
-    albert_model = AutoModelForMaskedLM.from_pretrained(albert_model_path, local_files_only=True)
-    albert_tokenizer = AutoTokenizer.from_pretrained(albert_model_path, local_files_only=True)
+    albert_model = AutoModelForMaskedLM.from_pretrained(
+        albert_model_path, local_files_only=True
+    )
+    albert_tokenizer = AutoTokenizer.from_pretrained(
+        albert_model_path, local_files_only=True
+    )
     logging.info(f"ALBERT model and tokenizer loaded from {albert_model_path}.")
 except Exception as e:
     logging.error(f"Error loading ALBERT model or tokenizer: {e}")
@@ -203,7 +225,7 @@ def generate_response(prompt):
         return "I'm sorry, something went wrong with processing your request."
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "prompt", type=str, help="The prompt for generating a response."
@@ -226,38 +248,48 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.set_param:
+    if args.set_param is not None:
         param_name, value = args.set_param
         try:
             value = float(value) if "." in value else int(value)
             set_generation_parameter(param_name, value)
             print(f"Set {param_name} to {value}.")
         except ValueError:
-            print(f"Invalid value for {param_name}: {value}. Please provide a valid numeric value.")
+            print(
+                f"Invalid value for {param_name}: {value}. Please provide a valid numeric value."
+            )
         return
 
     if args.explain_params:
         explain_generation_parameters()
         return
 
+    import asyncio
+    
     if args.loop:
         print("Entering loop mode. Type 'exit' to stop.")
+        loop = asyncio.get_event_loop()
         while True:
             try:
-                prompt = input("Enter your prompt: ")
+                prompt = await loop.run_in_executor(None, input, "Enter your prompt: ")
                 if prompt.lower() == "exit":
                     break
                 if not prompt.strip():
                     print("Input is empty. Please provide a valid prompt.")
                     continue
-                response = generate_response(prompt)
+                response = await loop.run_in_executor(None, generate_response, prompt)
+                logging.info(f"Collected feedback for prompt '{prompt}' and response '{response}'.")
                 print(response)
-                collect_feedback(prompt, response)
-            except KeyboardInterrupt:
+                await loop.run_in_executor(None, collect_feedback, prompt, response)
+            except (EOFError, KeyboardInterrupt):
                 print("\nExiting loop mode.")
                 break
         return
 
+    prompt = args.prompt.strip()
+    if args.prompt is None:
+        print("Input is empty. Please provide a valid prompt.")
+        return
     prompt = args.prompt.strip()
     if not prompt:
         print("Input is empty. Please provide a valid prompt.")
@@ -269,4 +301,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
