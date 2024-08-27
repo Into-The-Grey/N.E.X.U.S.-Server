@@ -10,6 +10,11 @@ from transformers import (
 )
 from response_filters.strict_format import strict_format
 from feedback_collector import collect_feedback
+from parameter_manager import (
+    set_generation_parameter,
+    get_generation_parameters,
+    explain_generation_parameters,
+)
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -19,11 +24,16 @@ load_dotenv(
     override=True,
 )
 
+# Load paths from the .env file
+gpt2_model_path = os.getenv("GPT_MODEL_PATH")
+albert_model_path = os.getenv("ALBERT_MODEL_PATH")
+response_config_path = os.getenv("RESPONSE_CONFIG")
+
 # Configure logging
 logging_dir = os.environ.get(
     "LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs"
 )
-log_file_name = "gpt2_sudo_tuned.log"  # Set the name of the log file here
+log_file_name = "gpt2_sudo_tuned.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)
 
 # Create the directory for the log file if it doesn't exist
@@ -53,7 +63,6 @@ def load_gpt2_model_and_tokenizer(gpt2_model_path):
         exit(1)
 
 
-gpt2_model_path = os.environ.get("GPT_MODEL_PATH")
 if not gpt2_model_path:
     logging.error("GPT-2 model path not specified in environment variables.")
     exit(1)
@@ -64,7 +73,6 @@ elif not os.path.exists(gpt2_model_path):
 gpt2_model, gpt2_tokenizer = load_gpt2_model_and_tokenizer(gpt2_model_path)
 
 # Load ALBERT model and tokenizer
-albert_model_path = os.environ.get("ALBERT_MODEL_PATH")
 if not albert_model_path:
     logging.error("ALBERT model path not specified in environment variables.")
     exit(1)
@@ -79,6 +87,23 @@ try:
 except Exception as e:
     logging.error(f"Error loading ALBERT model or tokenizer: {e}")
     exit(1)
+
+
+# Load the response config file
+def load_response_config(response_config_path):
+    if os.path.exists(response_config_path):
+        try:
+            with open(response_config_path, "r") as file:
+                return json.load(file)
+        except Exception as e:
+            logging.error(f"Error loading response config file: {e}")
+            exit(1)
+    else:
+        logging.error(f"Response config file not found at {response_config_path}")
+        exit(1)
+
+
+response_config = load_response_config(response_config_path)
 
 
 def analyze_input_with_albert(prompt):
@@ -98,21 +123,14 @@ def analyze_input_with_albert(prompt):
 
 def apply_filters(response):
     try:
-        config = {
-            "response_filters": {
-                "strict_format": {
-                    "enabled": True,
-                    "variations": ["variation1", "variation2"],
-                }
-            }
-        }  # Define the config variable with the necessary values
         if (
-            config.get("response_filters", {})
+            response_config.get("response_filters", {})
             .get("strict_format", {})
             .get("enabled", False)
         ):
             response = strict_format(
-                response, config["response_filters"]["strict_format"]["variations"]
+                response,
+                response_config["response_filters"]["strict_format"]["variations"],
             )
         return response
     except Exception as e:
@@ -127,10 +145,16 @@ def generate_response(prompt):
         # Analyze input with ALBERT before generating response with GPT-2
         analysis = analyze_input_with_albert(prompt)
 
-        # Here you could modify the prompt based on ALBERT's analysis (e.g., detected sentiment)
-
+        # Generate response with dynamic parameters
+        params = get_generation_parameters()
         inputs = gpt2_tokenizer(prompt, return_tensors="pt")
-        outputs = gpt2_model.generate(**inputs)
+        outputs = gpt2_model.generate(
+            **inputs,
+            max_length=params["max_length"],
+            temperature=params["temperature"],
+            top_k=params["top_k"],
+            top_p=params["top_p"],
+        )
         response = gpt2_tokenizer.decode(outputs[0], skip_special_tokens=True)
         logging.info(f"Generated response for prompt '{prompt}': {response}")
         return apply_filters(response)
