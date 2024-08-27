@@ -7,7 +7,7 @@ from transformers import pipeline
 feedback_file = "/home/ncacord/N.E.X.U.S.-Server/shared/manuel_tuned_gpt2/feedback/interaction_data.csv"
 
 # Configure logging
-logging_dir = "LOGGING_DIR"
+logging_dir = os.getenv("LOGGING_DIR", "/home/ncacord/N.E.X.U.S.-Server/shared/manual_tuned_gpt2/logs") "LOGGING_DIR"
 log_file_name = "feedback_manager.log"  # Custom log file name for this script
 log_file_path = os.path.join(logging_dir, log_file_name)
 
