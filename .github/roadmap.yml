@@ -1,0 +1,29 @@
+# .github/roadmap.yml
+# Configuration for updating the roadmap based on recent commits
+
+roadmap:
+  # The section in roadmap.md to update
+  section: "## Latest Updates"
+  
+  # How many commits to parse for updates
+  commits_to_parse: 3
+  
+  # Format for each commit message
+  commit_format: "- **Commit**: {sha}\n  **Message**: {message}\n  **Files Changed**: {files}"
+  
+  # Format for progress update
+  progress_format: "\n### Progress Update\n- **Completion**: {completed}/{total} ({percentage}%)"
+  
+  # The file to update (could be relative or absolute path)
+  roadmap_file: "roadmap.md"
+  
+  # Placeholder for tracking completion (this should be defined in your roadmap.md)
+  completion_placeholder: "<!-- PROGRESS_PLACEHOLDER -->"
+  
+  # Initial total items in the roadmap (this could be dynamically calculated if needed)
+  total_items: 100
+  
+  # Optional workflow to trigger after this one
+  trigger_workflow:
+    enabled: false
+    workflow_file: "another-workflow.yml"
