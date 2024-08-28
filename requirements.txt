@@ -96,6 +96,9 @@ pydantic==2.8.2
 pydantic_core==2.20.1
 Pygments==2.18.0
 pynvml==11.5.3
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.14
+PyQt5_sip==12.15.0
 PyQt6==6.7.1
 PyQt6-Qt6==6.7.2
 PyQt6_sip==13.8.0
