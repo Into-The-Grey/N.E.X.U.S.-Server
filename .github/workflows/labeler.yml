@@ -31,16 +31,21 @@ jobs:
         echo "Labels have been successfully applied."
 
     - name: Comment on PR when label is applied
-      if: always()
+      if: ${{ github.event_name == 'pull_request' }}
       uses: actions/github-script@v6
       with:
         script: |
-          const labels = context.payload.pull_request.labels.map(label => label.name).join(", ");
+          const labels = context.payload.pull_request?.labels || [];
+          const labelNames = labels.map(label => label.name).join(", ");
+          const commentBody = labels.length > 0 
+            ? `Labels applied to this pull request: ${labelNames}`
+            : "No labels were applied to this pull request.";
+
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `Labels applied to this pull request: ${labels}`
+            body: commentBody
           });
 
     - name: Trigger GitHub Project Bot Workflow
@@ -51,7 +56,7 @@ jobs:
           github.rest.actions.createWorkflowDispatch({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            workflow_id: 'github-project-bot.yml', # Filename of the GitHub Project Bot workflow
+            workflow_id: 'github-project-bot.yml',  # Ensure this matches the actual filename
             ref: context.ref,
             inputs: {
               trigger_reason: 'Labeler workflow completed'
