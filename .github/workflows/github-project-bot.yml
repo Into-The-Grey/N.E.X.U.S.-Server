@@ -1,0 +1,87 @@
+name: GitHub Project Bot
+
+on:
+  repository_dispatch:
+    types: [labeler_workflow_completed]
+  workflow_dispatch: # Allows manual trigger if needed
+
+jobs:
+  update-project:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Handle Repo1
+      uses: subhamX/github-project-bot@v1.0.0
+      with:
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        COLUMN_NAME: In Progress
+        PROJECT_URL: https://github.com/orgs/ORG_NAME/projects/1 
+        REPO_URL: https://github.com/ORG_NAME/repo1
+
+    - name: Handle Repo2
+      uses: subhamX/github-project-bot@v1.0.0
+      with:
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        COLUMN_NAME: In Progress
+        PROJECT_URL: https://github.com/orgs/ORG_NAME/projects/1
+        REPO_URL: https://github.com/ORG_NAME/repo2
+
+    - name: Parse Recent Commits and Update Roadmap
+      run: |
+        echo "Parsing recent commits and updating roadmap..."
+        recent_commits=$(git log -n $(yq e '.roadmap.commits_to_parse' .github/roadmap.yml) --pretty=format:"%h;%s" --name-status)
+        
+        roadmap_file=$(yq e '.roadmap.roadmap_file' .github/roadmap.yml)
+        section=$(yq e '.roadmap.section' .github/roadmap.yml)
+        commit_format=$(yq e '.roadmap.commit_format' .github/roadmap.yml)
+        progress_format=$(yq e '.roadmap.progress_format' .github/roadmap.yml)
+        total_items=$(yq e '.roadmap.total_items' .github/roadmap.yml)
+        completion_placeholder=$(yq e '.roadmap.completion_placeholder' .github/roadmap.yml)
+        
+        # Start building the update content
+        update_content="$section\n"
+        completed=0
+        
+        # Loop through commits and format them for the roadmap update
+        while IFS= read -r commit; do
+          sha=$(echo "$commit" | cut -d ';' -f 1)
+          message=$(echo "$commit" | cut -d ';' -f 2)
+          files=$(echo "$commit" | cut -d ';' -f 3)
+          update_content+=$(echo "$commit_format" | sed "s/{sha}/$sha/" | sed "s/{message}/$message/" | sed "s/{files}/$files/")
+          update_content+="\n"
+          completed=$((completed + 1)) # Increment completion count for simplicity
+        done <<< "$recent_commits"
+        
+        # Calculate progress
+        percentage=$(awk "BEGIN {printf \"%.2f\",($completed/$total_items)*100}")
+        progress_update=$(echo "$progress_format" | sed "s/{completed}/$completed/" | sed "s/{total}/$total_items/" | sed "s/{percentage}/$percentage/")
+        
+        # Insert the progress update into the roadmap file
+        sed -i "s|$completion_placeholder|$progress_update\n$completion_placeholder|" "$roadmap_file"
+        
+        # Append the update content to the roadmap file
+        echo -e "$update_content" >> "$roadmap_file"
+        
+        # Commit the changes
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add "$roadmap_file"
+        git commit -m "Update roadmap with recent commits and progress"
+
+    - name: Optional Trigger for Another Workflow
+      if: always() && ${{ fromJson(secrets.ENABLE_TRIGGER).enabled == 'true' }} # Commented out by default
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: $(yq e '.roadmap.trigger_workflow.workflow_file' .github/roadmap.yml),
+            ref: context.ref,
+            inputs: {
+              trigger_reason: 'GitHub Project Bot workflow completed'
+            }
+          })
