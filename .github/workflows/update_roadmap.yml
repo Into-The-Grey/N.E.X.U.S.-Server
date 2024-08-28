@@ -25,7 +25,7 @@ jobs:
 
     - name: Generate Roadmap Visualization
       run: |
-        python generate_roadmap_visual.py  # This script will generate the mind map visualization
+        python scripts/generate_roadmap_visual.py  # Adjust the path if your script is in a different location
 
     - name: Commit and Push Changes
       run: |
