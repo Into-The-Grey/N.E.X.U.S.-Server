@@ -1,0 +1,59 @@
+name: Labeler
+
+on:
+  push:
+    branches:
+      - '*'
+  workflow_dispatch:
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      actions: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Run Labeler Action
+      uses: actions/labeler@v4
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Notify on label application
+      if: always()
+      run: |
+        echo "Labels have been successfully applied."
+
+    - name: Comment on PR when label is applied
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const labels = context.payload.pull_request.labels.map(label => label.name).join(", ");
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `Labels applied to this pull request: ${labels}`
+          });
+
+    - name: Trigger GitHub Project Bot Workflow
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'github-project-bot.yml', # Filename of the GitHub Project Bot workflow
+            ref: context.ref,
+            inputs: {
+              trigger_reason: 'Labeler workflow completed'
+            }
+          })
