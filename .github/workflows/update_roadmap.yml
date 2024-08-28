@@ -1,0 +1,52 @@
+name: Update Roadmap Visualization
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-roadmap:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install Dependencies
+      run: |
+        pip install graphviz pyqt5
+
+    - name: Generate Roadmap Visualization
+      run: |
+        python generate_roadmap_visual.py  # This script will generate the mind map visualization
+
+    - name: Commit and Push Changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add output/roadmap.png
+        git commit -m "Update roadmap visualization"
+        git push
+
+    # Optional future trigger (commented out)
+    # - name: Trigger Next Workflow
+    #   if: always()
+    #   uses: actions/github-script@v6
+    #   with:
+    #     script: |
+    #       github.rest.actions.createWorkflowDispatch({
+    #         owner: context.repo.owner,
+    #         repo: context.repo.repo,
+    #         workflow_id: 'next-workflow.yml',
+    #         ref: context.ref,
+    #         inputs: {
+    #           trigger_reason: 'Roadmap visualization updated'
+    #         }
+    #       })
