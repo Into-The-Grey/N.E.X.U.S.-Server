@@ -51,4 +51,8 @@ Thank you for joining us on this journey. NEXUS is more than just a tool—it's 
 
 ---
 
-Feel free to customize or expand upon this placeholder text and let me know if you need anything else!
+## 📝 License
+
+This project is licensed under the PROPRIETARY License. See the [LICENSE](LICENSE) file for more details.
+
+---
