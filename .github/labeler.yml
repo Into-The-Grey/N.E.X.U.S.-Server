@@ -1,0 +1,185 @@
+# Labeler config for GitHub Actions
+# This file automatically applies labels to PRs based on file changes and branch names.
+
+API:
+  any:
+    changed-files:
+      - 'api/**'
+      - 'services/api/**'
+
+Architecture:
+  any:
+    changed-files:
+      - 'architecture/**'
+      - 'docs/architecture/**'
+
+Backend:
+  any:
+    changed-files:
+      - 'backend/**'
+      - 'services/backend/**'
+
+Bug Fix:
+  any:
+    changed-files:
+      - '**/*.bugfix'
+      - '**/fixes/**'
+
+CI/CD:
+  any:
+    changed-files:
+      - '.github/workflows/**'
+      - 'ci/**'
+      - 'cd/**'
+
+Deployment:
+  any:
+    changed-files:
+      - 'deploy/**'
+      - 'scripts/deployment/**'
+
+Development:
+  any:
+    changed-files:
+      - 'src/**'
+      - 'lib/**'
+
+Documentation:
+  any:
+    changed-files:
+      - 'docs/**'
+      - '*.md'
+
+Frontend:
+  any:
+    changed-files:
+      - 'frontend/**'
+      - 'src/frontend/**'
+
+Machine Learning:
+  any:
+    changed-files:
+      - 'ml/**'
+      - 'ai/**'
+
+NLP:
+  any:
+    changed-files:
+      - 'nlp/**'
+      - 'ai/nlp/**'
+
+Performance:
+  any:
+    changed-files:
+      - 'perf/**'
+      - 'src/performance/**'
+
+Planning:
+  any:
+    changed-files:
+      - 'planning/**'
+      - 'docs/planning/**'
+
+Priority: High:
+  all:
+    base-branch:
+      - 'main'
+    head-branch:
+      - 'hotfix/.*'
+      - 'emergency/.*'
+
+Priority: Medium:
+  any:
+    head-branch:
+      - 'feature/.*'
+      - 'enhancement/.*'
+
+Priority: Low:
+  any:
+    head-branch:
+      - 'low-priority/.*'
+
+Python:
+  any:
+    changed-files:
+      - '**/*.py'
+
+Refactoring:
+  any:
+    changed-files:
+      - 'refactor/**'
+      - 'src/**/*.refactor'
+
+Research:
+  any:
+    changed-files:
+      - 'research/**'
+      - 'docs/research/**'
+
+Security:
+  any:
+    changed-files:
+      - 'security/**'
+      - 'src/security/**'
+
+Setup:
+  any:
+    changed-files:
+      - 'setup/**'
+      - 'scripts/setup/**'
+
+Testing:
+  any:
+    changed-files:
+      - 'tests/**'
+      - 'src/**/*.test'
+
+UI/UX:
+  any:
+    changed-files:
+      - 'ui/**'
+      - 'ux/**'
+      - 'src/ui/**'
+      - 'src/ux/**'
+
+UX Research:
+  any:
+    changed-files:
+      - 'research/ux/**'
+      - 'docs/ux-research/**'
+
+duplicate:
+  any:
+    changed-files:
+      - 'duplicates/**'
+      - '**/*.dup'
+
+enhancement:
+  any:
+    head-branch:
+      - 'enhancement/.*'
+
+Feature Request:
+  any:
+    head-branch:
+      - 'feature/.*'
+
+good first issue:
+  any:
+    changed-files:
+      - 'docs/good-first-issue/**'
+
+help wanted:
+  any:
+    head-branch:
+      - 'help-wanted/.*'
+
+invalid:
+  any:
+    changed-files:
+      - '**/*.invalid'
+
+wontfix:
+  any:
+    changed-files:
+      - 'wontfix/**'
