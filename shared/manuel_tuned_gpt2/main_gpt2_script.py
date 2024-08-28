@@ -31,10 +31,7 @@ load_dotenv(
 
 # Load paths from the .env file
 gpt2_model_path = os.getenv("GPT_MODEL_PATH")
-# Remove redundant check for gpt2_model_path
-# Remove redundant check for gpt2_model_path
 albert_model_path = os.getenv("ALBERT_MODEL_PATH")
-# Remove redundant check for albert_model_path
 response_config_path = os.getenv("RESPONSE_CONFIG")
 if response_config_path is None:
     logging.error("Response config path not specified in environment variables.")
@@ -89,7 +86,23 @@ elif gpt2_model_path is None or not os.path.exists(gpt2_model_path):
 
 gpt2_model, gpt2_tokenizer = load_gpt2_model_and_tokenizer(gpt2_model_path)
 
+
 # Load ALBERT model and tokenizer
+def load_albert_model_and_tokenizer(albert_model_path):
+    try:
+        albert_model = AutoModelForMaskedLM.from_pretrained(
+            albert_model_path, local_files_only=True
+        )
+        albert_tokenizer = AutoTokenizer.from_pretrained(
+            albert_model_path, local_files_only=True
+        )
+        logging.info(f"ALBERT model and tokenizer loaded from {albert_model_path}.")
+        return albert_model, albert_tokenizer
+    except Exception as e:
+        logging.error(f"Error loading ALBERT model or tokenizer: {e}")
+        exit(1)
+
+
 if not albert_model_path:
     logging.error("ALBERT model path not specified in environment variables.")
     exit(1)
@@ -265,7 +278,7 @@ async def main():
         return
 
     import asyncio
-    
+
     if args.loop:
         print("Entering loop mode. Type 'exit' to stop.")
         loop = asyncio.get_event_loop()
@@ -278,7 +291,9 @@ async def main():
                     print("Input is empty. Please provide a valid prompt.")
                     continue
                 response = await loop.run_in_executor(None, generate_response, prompt)
-                logging.info(f"Collected feedback for prompt '{prompt}' and response '{response}'.")
+                logging.info(
+                    f"Collected feedback for prompt '{prompt}' and response '{response}'."
+                )
                 print(response)
                 await loop.run_in_executor(None, collect_feedback, prompt, response)
             except (EOFError, KeyboardInterrupt):
@@ -302,4 +317,5 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
