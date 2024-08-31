@@ -5,7 +5,8 @@ import json
 import time
 from dotenv import load_dotenv
 from basic_email_tasks import count_unread_emails, automatically_sort_emails
-from nlp_email_tasks import summarize_important_emails, detect_email_sentiment, get_email_body
+from nlp_email_tasks import summarize_important_emails, detect_email_sentiment
+import email
 
 # Load environment variables from the .env file
 load_dotenv(
@@ -14,7 +15,7 @@ load_dotenv(
     override=True,
 )
 
-# Load configuration settings from the config.jsonc file
+# Load configuration settings from the config.json file
 with open(
     "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
     "r",
@@ -92,7 +93,6 @@ if __name__ == "__main__":
         if not config.get("skip_nlp_tasks", False):
             summarize_important_emails(mail_connection)
             detect_email_sentiment(mail_connection)
-            get_email_body(mail_connection)
 
         logging.info(
             "All tasks completed. Waiting for 5 seconds before disconnecting..."

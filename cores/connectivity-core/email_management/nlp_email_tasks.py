@@ -1,29 +1,38 @@
+import imaplib
 import os
 import logging
 import email  # Import the email module
-from email.message import Message  # Import Message instead of EmailMessage
+from email.message import EmailMessage
 from dotenv import load_dotenv
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import json
 
 # Load environment variables from the .env file
 load_dotenv(
-    dotenv_path="/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/connectivity.env"
+    dotenv_path="/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/connectivity.env",
+    verbose=True,
+    override=True,
 )
 
 # Load the NLP model path from the environment variables
-NLP_MODEL_PATH = os.getenv("NLP_MODEL_PATH", "")
+SEQ2SEQ_MODEL_PATH = os.getenv("SEQ2SEQ_MODEL_PATH")
+if SEQ2SEQ_MODEL_PATH is None:
+    raise ValueError("SEQ2SEQ_MODEL_PATH environment variable is not set.")
 
 # Load the NLP model
-tokenizer = AutoTokenizer.from_pretrained(NLP_MODEL_PATH)
-model = AutoModelForSeq2SeqLM.from_pretrained(NLP_MODEL_PATH)
+tokenizer = AutoTokenizer.from_pretrained(SEQ2SEQ_MODEL_PATH)
+model = AutoModelForSeq2SeqLM.from_pretrained(SEQ2SEQ_MODEL_PATH)
 
 # Load configuration settings from the config.json file
-with open(
-    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
-    "r",
-) as config_file:
-    config = json.load(config_file)
+try:
+    with open(
+        "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
+        "r",
+    ) as config_file:
+        config = json.load(config_file)
+except Exception as e:
+    logging.error(f"Failed to load configuration from config.json: {str(e)}")
+    config = {}
 
 
 def summarize_important_emails(mail):
@@ -63,7 +72,9 @@ def summarize_important_emails(mail):
                             no_repeat_ngram_size=config.get("no_repeat_ngram_size", 2),
                             early_stopping=config.get("early_stopping", True),
                         )
-                        summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+                        summary = tokenizer.decode(
+                            summary_ids[0], skip_special_tokens=True
+                        )
 
                         logging.info(f"Summary of email '{subject}': {summary}")
     except Exception as e:
@@ -114,23 +125,37 @@ def detect_email_sentiment(mail):
 
 def get_email_body(msg):
     # Ensure msg is an EmailMessage object
-    if isinstance(msg, Message):
+    if isinstance(msg, EmailMessage):
         # Extract the body from an email message
         if msg.is_multipart():
             for part in msg.walk():
                 if part.get_content_type() == "text/plain":
                     try:
                         payload = part.get_payload(decode=True)
-                        return payload.decode("utf-8", errors="replace") if isinstance(payload, bytes) else payload
+                        if isinstance(payload, bytes):
+                            return payload.decode("utf-8", errors="replace")
+                        return payload
                     except Exception:
                         payload = part.get_payload(decode=True)
-                        return payload.decode("latin1", errors="replace") if isinstance(payload, bytes) else payload
+                        if isinstance(payload, bytes):
+                            return payload.decode("utf-8", errors="replace")
+                        return payload
         else:
             try:
                 payload = msg.get_payload(decode=True)
-                return payload.decode("utf-8", errors="replace") if isinstance(payload, bytes) else payload
+                if isinstance(payload, bytes):
+                    return payload.decode("utf-8", errors="replace")
+                return payload
             except Exception:
                 payload = msg.get_payload(decode=True)
-                return payload.decode("latin1", errors="replace") if isinstance(payload, bytes) else payload
+                if isinstance(payload, bytes):
+                    return payload.decode("utf-8", errors="replace")
+                return payload
     else:
-        raise TypeError("msg is not an instance of Message")
+        raise TypeError(
+            f"msg is not an instance of EmailMessage, actual type: {type(msg).__name__}"
+        )
+
+
+# The main logic for the script should be handled elsewhere, where the connection to the mail server is managed.
+# Ensure that the connection object passed to `summarize_important_emails` and `detect_email_sentiment` is properly initialized.

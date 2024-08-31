@@ -5,8 +5,7 @@ import email
 import logging
 import json
 
-
-# Load configuration settings from the config.jsonc file
+# Load configuration settings from the config.json file
 with open(
     "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
     "r",
