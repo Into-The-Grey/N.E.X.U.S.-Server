@@ -1,0 +1,12 @@
+{
+  // Determines if the sorting should run in the background (no console output)
+  "in_background": true,
+
+  // Determines if only emails from the last 24 hours should be sorted
+  "only_sort_recent": true,
+
+  // Determines if sorting should only be applied to the inbox
+  "only_inbox": true
+
+  // Add more configuration options as needed
+}

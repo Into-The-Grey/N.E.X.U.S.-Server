@@ -2,9 +2,13 @@ import imaplib
 import os
 import logging
 import time
+import json
+import jsoncomment as jsonc
 from dotenv import load_dotenv
 from basic_email_tasks import count_unread_emails, automatically_sort_emails
 from nlp_email_tasks import summarize_important_emails, detect_email_sentiment
+from datetime import datetime, timedelta
+import email  # Import the email module
 
 # Load environment variables from the .env file
 load_dotenv(
@@ -12,6 +16,12 @@ load_dotenv(
     verbose=True,
     override=True,
 )
+
+# Load configuration settings from the config.jsonc file
+with open(
+    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/config.jsonc", "r"
+) as config_file:
+    config = jsonc.load(config_file)
 
 # Fetch email credentials from the environment variables
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")
@@ -69,15 +79,53 @@ def disconnect_from_email(mail):
         logging.error(f"Failed to disconnect: {str(e)}")
 
 
+def automatically_sort_emails_custom(mail, sorting_rules, config):
+    try:
+        if config["only_inbox"]:
+            mail.select("inbox")
+        else:
+            mail.select("all")
+
+        search_criteria = "ALL"
+        if config["only_sort_recent"]:
+            since_date = (datetime.now() - timedelta(days=1)).strftime("%d-%b-%Y")
+            search_criteria = f"(SINCE {since_date})"
+
+        status, response = mail.search(None, search_criteria)
+        all_msg_nums = response[0].split()
+
+        for e_id in all_msg_nums:
+            _, msg_data = mail.fetch(e_id, "(RFC822)")
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    subject = msg["Subject"]
+                    from_ = msg.get("From")
+
+                    # Ensure subject and from_ are not None
+                    if subject and from_:
+                        for rule in sorting_rules:
+                            if rule["condition"](subject.lower(), from_.lower()):
+                                mail.copy(e_id, rule["folder"])
+                                mail.store(e_id, "+FLAGS", "\\Deleted")
+                                if not config["in_background"]:
+                                    logging.info(
+                                        f"Moved email from {from_} with subject '{subject}' to folder '{rule['folder']}'"
+                                    )
+                                break
+        mail.expunge()  # Delete the moved emails from the inbox
+    except Exception as e:
+        logging.error(f"Failed to sort emails: {str(e)}")
+
+
 if __name__ == "__main__":
-    # Example usage
     mail_connection = connect_to_email()
     if mail_connection:
         # Perform any tasks with the mail connection here
 
         # Basic Tasks
         count_unread_emails(mail_connection)
-        automatically_sort_emails(
+        automatically_sort_emails_custom(
             mail_connection,
             sorting_rules=[
                 {
@@ -132,6 +180,7 @@ if __name__ == "__main__":
                     "folder": "Security",
                 },
             ],
+            config=config,
         )
 
         # NLP Tasks
@@ -139,8 +188,8 @@ if __name__ == "__main__":
         detect_email_sentiment(mail_connection)
 
         logging.info(
-            "All tasks completed. Waiting for 10 seconds before disconnecting..."
+            "All tasks completed. Waiting for 5 seconds before disconnecting..."
         )
-        time.sleep(10)  # Wait for 10 seconds
+        time.sleep(5)  # Wait for 5 seconds
 
         disconnect_from_email(mail_connection)
