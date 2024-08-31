@@ -29,15 +29,17 @@ def automatically_sort_emails(mail, sorting_rules):
                     subject = msg["Subject"]
                     from_ = msg.get("From")
 
-                    for rule in sorting_rules:
-                        if rule["condition"](subject, from_):
-                            # Move the email to the appropriate folder
-                            mail.copy(e_id, rule["folder"])
-                            mail.store(e_id, "+FLAGS", "\\Deleted")
-                            logging.info(
-                                f"Moved email from {from_} with subject '{subject}' to folder '{rule['folder']}'"
-                            )
-                            break
+                    # Ensure subject and from_ are not None
+                    if subject and from_:
+                        for rule in sorting_rules:
+                            if rule["condition"](subject.lower(), from_.lower()):
+                                # Move the email to the appropriate folder
+                                mail.copy(e_id, rule["folder"])
+                                mail.store(e_id, "+FLAGS", "\\Deleted")
+                                logging.info(
+                                    f"Moved email from {from_} with subject '{subject}' to folder '{rule['folder']}'"
+                                )
+                                break
         mail.expunge()  # Delete the moved emails from the inbox
     except Exception as e:
         logging.error(f"Failed to sort emails: {str(e)}")

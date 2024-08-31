@@ -60,7 +60,17 @@ def get_email_body(msg):
     if msg.is_multipart():
         for part in msg.walk():
             if part.get_content_type() == "text/plain":
-                return part.get_payload(decode=True).decode("utf-8")
+                try:
+                    return part.get_payload(decode=True).decode(
+                        "utf-8", errors="replace"
+                    )
+                except:
+                    return part.get_payload(decode=True).decode(
+                        "latin1", errors="replace"
+                    )
     else:
-        return msg.get_payload(decode=True).decode("utf-8")
+        try:
+            return msg.get_payload(decode=True).decode("utf-8", errors="replace")
+        except:
+            return msg.get_payload(decode=True).decode("latin1", errors="replace")
     return ""

@@ -88,6 +88,49 @@ if __name__ == "__main__":
                     "condition": lambda subject, from_: "newsletter" in subject.lower(),
                     "folder": "Newsletters",
                 },
+                {
+                    "condition": lambda subject, from_: "order confirmation"
+                    in subject.lower()
+                    or "purchase" in subject.lower(),
+                    "folder": "Shopping",
+                },
+                {
+                    "condition": lambda subject, from_: "shipment" in subject.lower()
+                    or "tracking" in subject.lower(),
+                    "folder": "Shipping",
+                },
+                {
+                    "condition": lambda subject, from_: "game" in subject.lower()
+                    or "gaming" in subject.lower(),
+                    "folder": "Gaming",
+                },
+                {
+                    "condition": lambda subject, from_: "sale" in subject.lower()
+                    or "discount" in subject.lower(),
+                    "folder": "Promotions",
+                },
+                {
+                    "condition": lambda subject, from_: "subscription"
+                    in subject.lower()
+                    or "renewal" in subject.lower(),
+                    "folder": "Subscriptions",
+                },
+                {
+                    "condition": lambda subject, from_: "support" in subject.lower()
+                    or "help" in subject.lower(),
+                    "folder": "Support",
+                },
+                {
+                    "condition": lambda subject, from_: "social" in subject.lower()
+                    or "friend request" in subject.lower(),
+                    "folder": "Social",
+                },
+                {
+                    "condition": lambda subject, from_: "security alert"
+                    in subject.lower()
+                    or "password reset" in subject.lower(),
+                    "folder": "Security",
+                },
             ],
         )
 
