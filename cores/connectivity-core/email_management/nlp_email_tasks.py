@@ -1,14 +1,13 @@
 import imaplib
 import os
 import logging
-from email.policy import (
-    default as email_policy_default,
-)  # Import the default policy directly
-import email  # Import the email module
+import email
 from email.message import EmailMessage
+from email.policy import default as email_policy_default
 from dotenv import load_dotenv
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import json
+import re
 
 # Load environment variables from the .env file
 load_dotenv(
@@ -38,20 +37,38 @@ except Exception as e:
     config = {}
 
 
+# Function to clean and sanitize email headers
+def clean_header(header, value):
+    """
+    Cleans and sanitizes email header values by removing invalid characters.
+    """
+    if not value:
+        return None
+    # Remove linefeeds and carriage returns
+    value = value.replace("\n", "").replace("\r", "")
+    # Replace invalid characters with a placeholder
+    value = re.sub(r"[^\x20-\x7E]", "", value)  # Keep only printable ASCII characters
+    if not value:
+        logging.warning(f"Header '{header}' was empty after sanitization.")
+        return None
+    return value
+
+
 def convert_to_email_message(msg):
     """Convert a general Message object to an EmailMessage object."""
     if not isinstance(msg, EmailMessage):
         new_msg = EmailMessage(policy=email_policy_default)
         for header, value in msg.items():
-            if "\n" in value or "\r" in value:
+            cleaned_value = clean_header(header, value)
+            if cleaned_value:
+                try:
+                    new_msg[header] = cleaned_value
+                except ValueError as e:
+                    logging.error(f"Failed to set header '{header}': {str(e)}")
+            else:
                 logging.warning(
                     f"Skipping header '{header}' due to invalid characters."
                 )
-                continue
-            try:
-                new_msg[header] = value
-            except ValueError as e:
-                logging.error(f"Failed to set header '{header}': {str(e)}")
         new_msg.set_payload(msg.get_payload())
         msg = new_msg
     return msg
@@ -179,3 +196,7 @@ def get_email_body(msg):
         raise TypeError(
             f"msg is not an instance of EmailMessage, actual type: {type(msg).__name__}"
         )
+
+
+# Example usage
+# Call your functions with the appropriate mail object as needed
