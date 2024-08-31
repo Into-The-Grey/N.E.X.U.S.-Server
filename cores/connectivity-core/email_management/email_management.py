@@ -3,6 +3,8 @@ import os
 import logging
 import time
 from dotenv import load_dotenv
+from basic_email_tasks import count_unread_emails, automatically_sort_emails
+from nlp_email_tasks import summarize_important_emails, detect_email_sentiment
 
 # Load environment variables from the .env file
 load_dotenv(
@@ -72,6 +74,26 @@ if __name__ == "__main__":
     mail_connection = connect_to_email()
     if mail_connection:
         # Perform any tasks with the mail connection here
+
+        # Basic Tasks
+        count_unread_emails(mail_connection)
+        automatically_sort_emails(
+            mail_connection,
+            sorting_rules=[
+                {
+                    "condition": lambda subject, from_: "invoice" in subject.lower(),
+                    "folder": "Invoices",
+                },
+                {
+                    "condition": lambda subject, from_: "newsletter" in subject.lower(),
+                    "folder": "Newsletters",
+                },
+            ],
+        )
+
+        # NLP Tasks
+        summarize_important_emails(mail_connection)
+        detect_email_sentiment(mail_connection)
 
         logging.info(
             "All tasks completed. Waiting for 10 seconds before disconnecting..."
