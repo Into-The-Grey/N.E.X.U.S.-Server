@@ -2,8 +2,7 @@
   "log_level": "INFO",
   "send_notifications": false,
   "time_interval": 3600,
-  "skip_standard_tasks": false,
-  "skip_nlp_tasks": false,
+
 
   "rescan_all": false,
   "sort_in_background": false,

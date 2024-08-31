@@ -1,9 +1,10 @@
-import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import imaplib
 import email
 import logging
 import json
+import os
+
 
 # Load configuration settings from the config.json file
 with open(
@@ -38,13 +39,50 @@ def count_unread_emails(mail):
         else:
             logging.error("Failed to search for unread emails.")
             return 0
-    except Exception as e:
+    except imaplib.IMAP4.error as e:
         logging.error(f"Failed to count unread emails: {str(e)}")
+        return 0
+    except Exception as e:
+        logging.error(f"An error occurred while counting unread emails: {str(e)}")
         return 0
 
 
+from concurrent.futures import ThreadPoolExecutor
+
+
+def process_email(mail, e_id, sorting_rules, config):
+    _, msg_data = mail.fetch(e_id, "(BODY[HEADER.FIELDS (SUBJECT FROM)])")
+    for response_part in msg_data:
+        if isinstance(response_part, tuple):
+            msg = email.message_from_bytes(response_part[1])
+            subject = msg["Subject"]
+            from_ = msg.get("From")
+
+            if subject and from_:
+                subject_lower = subject.lower()
+                from_lower = from_.lower()
+                for rule in sorting_rules:
+                    if rule["condition"](subject_lower, from_lower):
+                        status, _ = mail.store(e_id, "+X-GM-LABELS", rule["label"])
+                        if status == "OK":
+                            if not config.get("sort_in_background", False):
+                                logging.info(
+                                    f"Labeled email from {from_} with subject '{subject}' as '{rule['label']}'"
+                                )
+                            if config.get("auto_archive_after_sort", False):
+                                mail.store(e_id, "+FLAGS", "\\Archive")
+                        else:
+                            logging.error(
+                                f"Failed to label email from {from_} with subject '{subject}' as '{rule['label']}'"
+                            )
+                        break
+
+
 def automatically_sort_emails(mail, config):
-    # Load custom sorting rules or use the defaults
+    # Fetch all email headers at once
+    _, all_msg_nums = mail.search(None, "ALL")
+    all_msg_nums = all_msg_nums[0].split()[: min(config.get("max_emails_per_run", 100), len(all_msg_nums))]
+
     sorting_rules = config.get(
         "custom_sorting_rules",
         [
@@ -100,6 +138,21 @@ def automatically_sort_emails(mail, config):
         ],
     )
 
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for e_id in all_msg_nums:
+            futures.append(
+                executor.submit(process_email, mail, e_id, sorting_rules, config)
+            )
+
+        # Wait for all tasks to complete
+        for future in futures:
+            future.result()
+
+    mail.expunge()
+    logging.info("Finished sorting and labeling emails.")
+    # Remove the redundant redefinition of sorting_rules
+
     try:
         status, _ = mail.select("inbox")
         if status == "OK":
@@ -115,10 +168,11 @@ def automatically_sort_emails(mail, config):
                 [f'"{rule["label"]}"' for rule in sorting_rules]
             )
             search_criteria = f"ALL NOT X-GM-LABELS {label_conditions}"
+            search_criteria = f'(SINCE "{(datetime.now(timezone.utc) - timedelta(days=1)).strftime("%d-%b-%Y")}")'
 
         if config.get("only_sort_recent", False):
             # Only sort emails received within the last 24 hours
-            search_criteria = f'(SINCE "{(datetime.datetime.now() - timedelta(days=1)).strftime("%d-%b-%Y")}")'
+            search_criteria = f'(SINCE "{(datetime.now(timezone.utc) - timedelta(days=1)).strftime("%d-%b-%Y")}")'
 
         status, response = mail.search(None, search_criteria)
         if status == "OK":
@@ -128,7 +182,7 @@ def automatically_sort_emails(mail, config):
             return
 
         for e_id in all_msg_nums:
-            _, msg_data = mail.fetch(e_id, "(RFC822)")
+            _, msg_data = mail.fetch(e_id, "(BODY[HEADER.FIELDS (SUBJECT FROM)])")
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
@@ -149,7 +203,7 @@ def automatically_sort_emails(mail, config):
                                             f"Labeled email from {from_} with subject '{subject}' as '{rule['label']}'"
                                         )
                                     if config.get("auto_archive_after_sort", False):
-                                        mail.store(e_id, "+FLAGS", "\\Archived")
+                                        mail.store(e_id, "+FLAGS", "\\Archive")
                                 else:
                                     logging.error(
                                         f"Failed to label email from {from_} with subject '{subject}' as '{rule['label']}'"
