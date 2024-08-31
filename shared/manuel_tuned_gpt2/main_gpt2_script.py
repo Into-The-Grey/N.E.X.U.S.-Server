@@ -238,13 +238,7 @@ async def main():
             )
             return
         try:
-            try:
-                value = float(value) if "." in value else int(value)
-            except ValueError:
-                print(
-                    f"Invalid value for {param_name}: {value}. Please provide a valid numeric value."
-                )
-                return
+            value = float(value) if "." in value else int(value)
         except ValueError:
             print(
                 f"Invalid value for {param_name}: {value}. Please provide a valid numeric value."
@@ -270,23 +264,18 @@ async def main():
                 if not prompt.strip():
                     print("Input is empty. Please provide a valid prompt.")
                     continue
-                try:
-                    response = await loop.run_in_executor(
-                        None, generate_response, prompt
-                    )
-                except (EOFError, KeyboardInterrupt):
-                    print("\nExiting loop mode.")
-                    break
+                response = await loop.run_in_executor(None, generate_response, prompt)
                 logging.info(
                     f"Collected feedback for prompt '{prompt}' and response '{response}'."
                 )
                 print(response)
                 await loop.run_in_executor(None, collect_feedback, prompt, response)
-            except EOFError:
+            except (EOFError, KeyboardInterrupt):
                 print("\nExiting loop mode.")
                 break
-            except KeyboardInterrupt:
-                print("\nKeyboard interrupt detected. Exiting loop mode.")
+            except Exception as e:
+                logging.error(f"An error occurred in loop mode: {e}")
+                print(f"An error occurred: {e}")
                 break
         return
 
@@ -298,11 +287,11 @@ async def main():
     try:
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(None, generate_response, prompt)
+        print(response)
+        collect_feedback(prompt, response)
     except Exception as e:
         logging.error(f"An error occurred during response generation: {e}")
-        response = "An error occurred during response generation."
-    print(response)
-    collect_feedback(prompt, response)
+        print("An error occurred during response generation.")
 
 
 if __name__ == "__main__":
