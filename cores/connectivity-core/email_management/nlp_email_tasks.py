@@ -159,7 +159,16 @@ def detect_email_sentiment(mail):
                         sentiment = outputs.logits.argmax(dim=1).item()
 
                         sentiment_labels = config.get(
-                            "sentiment_labels", ["Negative", "Positive"]
+                            "sentiment_labels",
+                            [
+                                "Negative",
+                                "Positive",
+                                "Neutral",
+                                "Mixed",
+                                "Unknown",
+                                "Error",
+                                "Not Applicable",
+                            ],
                         )
                         logging.info(
                             f"Sentiment of email '{subject}': {sentiment_labels[sentiment]}"

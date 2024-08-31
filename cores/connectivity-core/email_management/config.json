@@ -4,7 +4,7 @@
   "time_interval": 3600,
 
 
-  "rescan_all": false,
+  "rescan_all": true,
   "sort_in_background": false,
   "only_sort_recent": false,
   "labels_to_skip": ["Archived", "Spam"],
@@ -15,7 +15,7 @@
   "num_beams": 4,
   "no_repeat_ngram_size": 2,
   "early_stopping": true,
-  "sentiment_labels": ["Negative", "Positive"],
+  "sentiment_labels": ["Negative", "Positive", "Neutral", "Mixed", "Unknown", "Error", "Not Applicable"],
   "skip_sentiment_analysis": false,
   "skip_summarization": false,
   "max_email_body_length": 512
