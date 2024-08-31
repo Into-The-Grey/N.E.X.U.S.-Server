@@ -1,0 +1,24 @@
+{
+  "log_level": "INFO",
+  "send_notifications": false,
+  "time_interval": 3600,
+  "skip_standard_tasks": false,
+  "skip_nlp_tasks": false,
+
+  "rescan_all": false,
+  "sort_in_background": false,
+  "only_sort_recent": false,
+  "labels_to_skip": ["Archived", "Spam"],
+  "max_emails_per_run": 100,
+  "auto_archive_after_sort": false,
+  "custom_sorting_rules": [],
+
+  "max_summary_length": 100,
+  "num_beams": 4,
+  "no_repeat_ngram_size": 2,
+  "early_stopping": true,
+  "sentiment_labels": ["Negative", "Positive"],
+  "skip_sentiment_analysis": false,
+  "skip_summarization": false,
+  "max_email_body_length": 512
+}

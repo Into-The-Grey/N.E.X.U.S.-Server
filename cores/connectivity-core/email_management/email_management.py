@@ -1,12 +1,11 @@
 import imaplib
 import os
 import logging
-import time
 import json
-import jsoncomment as jsonc
+import time
 from dotenv import load_dotenv
 from basic_email_tasks import count_unread_emails, automatically_sort_emails
-from nlp_email_tasks import summarize_important_emails, detect_email_sentiment
+from nlp_email_tasks import summarize_important_emails, detect_email_sentiment, get_email_body
 
 # Load environment variables from the .env file
 load_dotenv(
@@ -17,10 +16,10 @@ load_dotenv(
 
 # Load configuration settings from the config.jsonc file
 with open(
-    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.jsonc",
+    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
     "r",
 ) as config_file:
-    config = jsonc.JsonComment().load(config_file)
+    config = json.load(config_file)
 
 # Fetch email credentials from the environment variables
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")
@@ -93,6 +92,7 @@ if __name__ == "__main__":
         if not config.get("skip_nlp_tasks", False):
             summarize_important_emails(mail_connection)
             detect_email_sentiment(mail_connection)
+            get_email_body(mail_connection)
 
         logging.info(
             "All tasks completed. Waiting for 5 seconds before disconnecting..."

@@ -4,14 +4,14 @@ import imaplib
 import email
 import logging
 import json
-import jsoncomment as jsonc
+
 
 # Load configuration settings from the config.jsonc file
 with open(
-    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.jsonc",
+    "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
     "r",
 ) as config_file:
-    config = jsonc.JsonComment().load(config_file)
+    config = json.load(config_file)
 
 # Setup logging based on the config settings
 log_level = getattr(logging, config.get("log_level", "INFO").upper(), logging.INFO)

@@ -136,8 +136,7 @@ package-lock.json
 
 # Model Directories
 albert-xxlarge-v2/
-gpt2/
-whisper-tiny.en
+t5-large/
 
 
 Knowledge_Base
