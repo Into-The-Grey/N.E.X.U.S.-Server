@@ -1,8 +1,0 @@
-{
-    "context_length": 5,  // Number of previous interactions to consider for context
-    "include_timestamp": false,  // Whether to include timestamps in context memory
-    "include_user_id": false,  // Whether to include user IDs in context (useful for multi-user systems)
-    "memory_type": "short_term",  // Could be 'short_term' or 'long_term' based on how much history to keep
-    "fallback_memory": "minimal",  // What to do if context memory is empty ('minimal' or 'none')
-    "context_format": "User: {prompt} Bot: {response}"  // How to format context in memory
-}
