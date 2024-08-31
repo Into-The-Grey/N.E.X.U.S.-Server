@@ -47,9 +47,6 @@ def count_unread_emails(mail):
         return 0
 
 
-from concurrent.futures import ThreadPoolExecutor
-
-
 def process_email(mail, e_id, sorting_rules, config):
     _, msg_data = mail.fetch(e_id, "(BODY[HEADER.FIELDS (SUBJECT FROM)])")
     for response_part in msg_data:
@@ -138,16 +135,7 @@ def automatically_sort_emails(mail, config):
         ],
     )
 
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        for e_id in all_msg_nums:
-            futures.append(
-                executor.submit(process_email, mail, e_id, sorting_rules, config)
-            )
-
-        # Wait for all tasks to complete
-        for future in futures:
-            future.result()
+    
 
     try:
         search_criteria = "ALL"

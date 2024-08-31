@@ -10,7 +10,6 @@
   "labels_to_skip": ["Archived", "Spam"],
   "max_emails_per_run": 100,
   "auto_archive_after_sort": false,
-  "custom_sorting_rules": [],
 
   "max_summary_length": 100,
   "num_beams": 4,

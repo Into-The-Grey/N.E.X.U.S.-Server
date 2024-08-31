@@ -1,6 +1,9 @@
 import imaplib
 import os
 import logging
+from email.policy import (
+    default as email_policy_default,
+)  # Import the default policy directly
 import email  # Import the email module
 from email.message import EmailMessage
 from dotenv import load_dotenv
@@ -35,6 +38,25 @@ except Exception as e:
     config = {}
 
 
+def convert_to_email_message(msg):
+    """Convert a general Message object to an EmailMessage object."""
+    if not isinstance(msg, EmailMessage):
+        new_msg = EmailMessage(policy=email_policy_default)
+        for header, value in msg.items():
+            if "\n" in value or "\r" in value:
+                logging.warning(
+                    f"Skipping header '{header}' due to invalid characters."
+                )
+                continue
+            try:
+                new_msg[header] = value
+            except ValueError as e:
+                logging.error(f"Failed to set header '{header}': {str(e)}")
+        new_msg.set_payload(msg.get_payload())
+        msg = new_msg
+    return msg
+
+
 def summarize_important_emails(mail):
     if config.get("skip_summarization", False):
         logging.info("Summarization skipped as per configuration.")
@@ -50,6 +72,9 @@ def summarize_important_emails(mail):
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
+                    msg = convert_to_email_message(
+                        msg
+                    )  # Convert the msg to EmailMessage
                     subject = msg["Subject"]
                     body = get_email_body(msg)  # Function to extract the email body
 
@@ -96,6 +121,9 @@ def detect_email_sentiment(mail):
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
+                    msg = convert_to_email_message(
+                        msg
+                    )  # Convert the msg to EmailMessage
                     subject = msg["Subject"]
                     body = get_email_body(msg)  # Function to extract the email body
 
@@ -103,7 +131,7 @@ def detect_email_sentiment(mail):
                     if isinstance(body, str):
                         # Tokenize the input
                         inputs = tokenizer(
-                            body[: config.get("max_email_body_length", 512)],
+                            body,
                             return_tensors="pt",
                             max_length=config.get("max_email_body_length", 512),
                             truncation=True,
@@ -124,38 +152,30 @@ def detect_email_sentiment(mail):
 
 
 def get_email_body(msg):
-    # Ensure msg is an EmailMessage object
     if isinstance(msg, EmailMessage):
-        # Extract the body from an email message
+        body = []
         if msg.is_multipart():
-            for part in msg.walk():
+            for part in msg.iter_parts():
                 if part.get_content_type() == "text/plain":
                     try:
                         payload = part.get_payload(decode=True)
                         if isinstance(payload, bytes):
-                            return payload.decode("utf-8", errors="replace")
-                        return payload
-                    except Exception:
-                        payload = part.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            return payload.decode("utf-8", errors="replace")
-                        return payload
+                            body.append(payload.decode("utf-8", errors="replace"))
+                        else:
+                            body.append(payload)
+                    except Exception as e:
+                        logging.error(f"Failed to decode part: {str(e)}")
         else:
             try:
                 payload = msg.get_payload(decode=True)
                 if isinstance(payload, bytes):
-                    return payload.decode("utf-8", errors="replace")
-                return payload
-            except Exception:
-                payload = msg.get_payload(decode=True)
-                if isinstance(payload, bytes):
-                    return payload.decode("utf-8", errors="replace")
-                return payload
+                    body.append(payload.decode("utf-8", errors="replace"))
+                else:
+                    body.append(payload)
+            except Exception as e:
+                logging.error(f"Failed to decode payload: {str(e)}")
+        return "\n".join(body)
     else:
         raise TypeError(
             f"msg is not an instance of EmailMessage, actual type: {type(msg).__name__}"
         )
-
-
-# The main logic for the script should be handled elsewhere, where the connection to the mail server is managed.
-# Ensure that the connection object passed to `summarize_important_emails` and `detect_email_sentiment` is properly initialized.
