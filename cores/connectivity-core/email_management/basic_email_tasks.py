@@ -149,18 +149,7 @@ def automatically_sort_emails(mail, config):
         for future in futures:
             future.result()
 
-    mail.expunge()
-    logging.info("Finished sorting and labeling emails.")
-    # Remove the redundant redefinition of sorting_rules
-
     try:
-        status, _ = mail.select("inbox")
-        if status == "OK":
-            logging.info("Inbox selected successfully.")
-        else:
-            logging.error("Failed to select inbox.")
-            return
-
         search_criteria = "ALL"
         if not config.get("rescan_all", False):
             # Skip emails that already have one of the labels
