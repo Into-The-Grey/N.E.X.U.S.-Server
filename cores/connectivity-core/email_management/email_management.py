@@ -1,6 +1,7 @@
 import imaplib
 import os
 import logging
+import time
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
@@ -70,4 +71,11 @@ if __name__ == "__main__":
     # Example usage
     mail_connection = connect_to_email()
     if mail_connection:
+        # Perform any tasks with the mail connection here
+
+        logging.info(
+            "All tasks completed. Waiting for 10 seconds before disconnecting..."
+        )
+        time.sleep(10)  # Wait for 10 seconds
+
         disconnect_from_email(mail_connection)
