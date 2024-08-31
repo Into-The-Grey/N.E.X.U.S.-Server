@@ -191,7 +191,10 @@ def generate_response(prompt):
     )
 
     with torch.no_grad():
-        inputs = gpt2_tokenizer(contextual_prompt, return_tensors="pt").to(device)
+        inputs = gpt2_tokenizer(contextual_prompt, return_tensors="pt").to(
+            device
+        )  # Ensure inputs are on the correct device
+        gpt2_model.to(device)  # Ensure the model is on the correct device
         outputs = gpt2_model.generate(
             **inputs,
             max_length=max_length,
