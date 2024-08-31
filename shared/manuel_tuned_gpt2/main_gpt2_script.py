@@ -184,11 +184,20 @@ def generate_response(prompt):
     analysis = analyze_input_with_albert(prompt)
     contextual_prompt = session_manager.get_contextual_prompt(prompt)
     params = get_generation_parameters()
+
+    # Adjust max_length based on the length of the input
+    max_length = max(
+        params["max_length"], len(contextual_prompt) + params.get("max_new_tokens", 50)
+    )
+
     with torch.no_grad():
         inputs = gpt2_tokenizer(contextual_prompt, return_tensors="pt").to(device)
         outputs = gpt2_model.generate(
             **inputs,
-            max_length=params["max_length"],
+            max_length=max_length,
+            max_new_tokens=params.get(
+                "max_new_tokens", 50
+            ),  # Ensures controlled token generation
             temperature=params["temperature"],
             top_k=params["top_k"],
             top_p=params["top_p"],
