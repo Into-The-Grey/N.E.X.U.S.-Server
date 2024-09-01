@@ -20,21 +20,21 @@ logging.basicConfig(
 def run_email_management():
     try:
         # Run the email_management.py script
-        os.system(
-            "python3 /home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management.py"
-        )
+        import subprocess
+        subprocess.run(["python3", "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management.py"])
+        
         logging.info("Ran email_management.py successfully.")
     except Exception as e:
         logging.error(f"Failed to run email_management.py: {str(e)}")
 
 
 # Schedule the tasks to run at 12am, 6am, 12pm, and 6pm
-# schedule.every().day.at("00:00").do(run_email_management)
-# schedule.every().day.at("06:00").do(run_email_management)
-# schedule.every().day.at("12:00").do(run_email_management)
-# schedule.every().day.at("18:00").do(run_email_management)
+schedule.every().day.at("00:00").do(run_email_management)
+schedule.every().day.at("06:00").do(run_email_management)
+schedule.every().day.at("12:00").do(run_email_management)
+schedule.every().day.at("18:00").do(run_email_management)
 
 # Keep the script running
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
+while True:
+    schedule.run_pending()
+    time.sleep(5)
