@@ -16,21 +16,6 @@ except Exception as e:
     logging.error(f"Failed to load configuration from config.json: {str(e)}")
     config = {}
 
-# Configure the logging module
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(
-            os.path.join(
-                "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management",
-                "email_management.log",
-            )
-        ),
-        logging.StreamHandler(),
-    ],
-)
-
 
 def count_unread_emails(mail):
     try:
