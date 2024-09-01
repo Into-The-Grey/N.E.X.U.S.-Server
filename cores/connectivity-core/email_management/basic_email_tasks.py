@@ -1,9 +1,36 @@
-from datetime import datetime, timedelta, timezone
 import imaplib
 import email
 import logging
 import json
 import os
+from datetime import datetime, timedelta, timezone
+
+# Load configuration settings from the config.json file
+try:
+    with open(
+        "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management/config.json",
+        "r",
+    ) as config_file:
+        config = json.load(config_file)
+except Exception as e:
+    logging.error(f"Failed to load configuration from config.json: {str(e)}")
+    config = {}
+
+# Configure the logging module
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(
+            os.path.join(
+                "/home/ncacord/N.E.X.U.S.-Server/cores/connectivity-core/email_management",
+                "email_management.log",
+            )
+        ),
+        logging.StreamHandler(),
+    ],
+)
+
 
 def count_unread_emails(mail):
     try:
@@ -13,7 +40,7 @@ def count_unread_emails(mail):
         else:
             logging.error("Failed to select inbox.")
             return 0
-        
+
         status, response = mail.search(None, "UNSEEN")
         if status == "OK":
             unread_msg_nums = response[0].split()
@@ -23,7 +50,7 @@ def count_unread_emails(mail):
             logging.error("Failed to search for unread emails.")
             return 0
     except imaplib.IMAP4.error as e:
-        logging.error(f"Failed to count unread emails: {str(e)}")
+        logging.error(f"IMAP error while counting unread emails: {str(e)}")
         return 0
     except Exception as e:
         logging.error(f"An error occurred while counting unread emails: {str(e)}")
@@ -32,96 +59,106 @@ def count_unread_emails(mail):
 
 def process_email(mail, e_id, sorting_rules, config):
     try:
-        _, msg_data = mail.fetch(e_id, "(BODY[HEADER.FIELDS (SUBJECT FROM)])")
+        _, msg_data = mail.fetch(e_id, "(BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
         for response_part in msg_data:
             if isinstance(response_part, tuple):
                 msg = email.message_from_bytes(response_part[1])
                 subject = msg["Subject"]
                 from_ = msg.get("From")
+                date = msg.get("Date")
 
                 if subject and from_:
                     subject_lower = subject.lower()
                     from_lower = from_.lower()
+                    labels_applied = []
+
                     for rule in sorting_rules:
                         if rule["condition"](subject_lower, from_lower):
                             status, _ = mail.store(e_id, "+X-GM-LABELS", rule["label"])
                             if status == "OK":
-                                if not config.get("sort_in_background", False):
-                                    logging.info(
-                                        f"Labeled email from {from_} with subject '{subject}' as '{rule['label']}'"
-                                    )
-                                if config.get("auto_archive_after_sort", False):
-                                    mail.store(e_id, "+FLAGS", "\\Archive")
+                                logging.info(
+                                    f"Labeled email from {from_} with subject '{subject}' as '{rule['label']}' on {date}"
+                                )
+                                labels_applied.append(rule["label"])
                             else:
                                 logging.error(
                                     f"Failed to label email from {from_} with subject '{subject}' as '{rule['label']}'"
                                 )
-                            break
+
+                    if labels_applied and config.get("auto_archive_after_sort", False):
+                        mail.store(e_id, "+FLAGS", "\\Archive")
+                        logging.info(
+                            f"Email from {from_} with subject '{subject}' archived after labeling."
+                        )
+                else:
+                    logging.warning(
+                        f"Email ID {e_id.decode()} has no subject or from address."
+                    )
     except Exception as e:
-        logging.error(f"An error occurred while processing email: {str(e)}")
+        logging.error(
+            f"An error occurred while processing email ID {e_id.decode()}: {str(e)}"
+        )
 
 
 def automatically_sort_emails(mail, config):
     try:
-        # Fetch all email headers at once
-        _, all_msg_nums = mail.search(None, "ALL")
-        all_msg_nums = all_msg_nums[0].split()
         sorting_rules = config.get(
             "custom_sorting_rules",
             [
                 {
-                    "condition": lambda subject, from_: "invoice" in subject.lower(),
+                    "condition": lambda subject, from_: "invoice" in subject,
                     "label": "Invoices",
                 },
                 {
-                    "condition": lambda subject, from_: "newsletter" in subject.lower(),
+                    "condition": lambda subject, from_: "newsletter" in subject,
                     "label": "Newsletters",
                 },
                 {
-                    "condition": lambda subject, from_: "order confirmation"
-                    in subject.lower()
-                    or "purchase" in subject.lower(),
+                    "condition": lambda subject, from_: "order confirmation" in subject
+                    or "purchase" in subject,
                     "label": "Shopping",
                 },
                 {
-                    "condition": lambda subject, from_: "shipment" in subject.lower()
-                    or "tracking" in subject.lower(),
+                    "condition": lambda subject, from_: "shipment" in subject
+                    or "tracking" in subject,
                     "label": "Shipping",
                 },
                 {
-                    "condition": lambda subject, from_: "game" in subject.lower()
-                    or "gaming" in subject.lower(),
+                    "condition": lambda subject, from_: "game" in subject
+                    or "gaming" in subject,
                     "label": "Gaming",
                 },
                 {
-                    "condition": lambda subject, from_: "sale" in subject.lower()
-                    or "discount" in subject.lower(),
+                    "condition": lambda subject, from_: "sale" in subject
+                    or "discount" in subject,
                     "label": "Promotions",
                 },
                 {
-                    "condition": lambda subject, from_: "subscription" in subject.lower()
-                    or "renewal" in subject.lower(),
+                    "condition": lambda subject, from_: "subscription" in subject
+                    or "renewal" in subject,
                     "label": "Subscriptions",
                 },
                 {
-                    "condition": lambda subject, from_: "support" in subject.lower()
-                    or "help" in subject.lower(),
+                    "condition": lambda subject, from_: "support" in subject
+                    or "help" in subject,
                     "label": "Support",
                 },
                 {
-                    "condition": lambda subject, from_: "social" in subject.lower()
-                    or "friend request" in subject.lower(),
-                    "label": "social",
+                    "condition": lambda subject, from_: "social" in subject
+                    or "friend request" in subject,
+                    "label": "Social",
                 },
                 {
-                    "condition": lambda subject, from_: "security alert" in subject.lower()
-                    or "password reset" in subject.lower(),
+                    "condition": lambda subject, from_: "security alert" in subject
+                    or "password reset" in subject,
                     "label": "Security",
                 },
             ],
         )
 
-        if not config.get("rescan_all", False) and not config.get("only_sort_recent", False):
+        if not config.get("rescan_all", False) and not config.get(
+            "only_sort_recent", False
+        ):
             # Skip emails that already have one of the labels
             label_conditions = " ".join(
                 [f'"{rule["label"]}"' for rule in sorting_rules]
@@ -136,7 +173,9 @@ def automatically_sort_emails(mail, config):
         try:
             status, response = mail.search(None, search_criteria)
             if status == "OK":
-                all_msg_nums = response[0].split()[: config.get("max_emails_per_run", 100)]
+                all_msg_nums = response[0].split()[
+                    : config.get("max_emails_per_run", 100)
+                ]
             else:
                 logging.error("Failed to search for all emails.")
                 return
@@ -151,7 +190,7 @@ def automatically_sort_emails(mail, config):
             mail.expunge()
         except Exception as e:
             logging.error(f"An error occurred while expunging emails: {str(e)}")
-        
+
         logging.info("Finished sorting and labeling emails.")
     except Exception as e:
         logging.error(f"Failed to sort emails: {str(e)}")

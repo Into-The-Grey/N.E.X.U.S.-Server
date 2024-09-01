@@ -1,5 +1,5 @@
 {
-  "log_level": "INFO",
+  "log_level": "DEBUG",
   "send_notifications": false,
   "time_interval": 3600,
 
@@ -8,7 +8,7 @@
   "sort_in_background": false,
   "only_sort_recent": false,
   "labels_to_skip": ["Archived", "Spam"],
-  "max_emails_per_run": 100,
+  "max_emails_per_run": 12000,
   "auto_archive_after_sort": false,
 
   "max_summary_length": 100,

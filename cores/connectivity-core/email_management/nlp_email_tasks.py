@@ -6,6 +6,7 @@ from email.message import EmailMessage
 from email.policy import default as email_policy_default
 from dotenv import load_dotenv
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+import torch # Ensure that PyTorch is installed
 import json
 import re
 
@@ -17,13 +18,13 @@ load_dotenv(
 )
 
 # Load the NLP model path from the environment variables
-SEQ2SEQ_MODEL_PATH = os.getenv("SEQ2SEQ_MODEL_PATH")
-if SEQ2SEQ_MODEL_PATH is None:
+SEQ2SEQ_MODEL = os.getenv("SEQ2SEQ_MODEL_PATH")
+if SEQ2SEQ_MODEL is None:
     raise ValueError("SEQ2SEQ_MODEL_PATH environment variable is not set.")
 
 # Load the NLP model
-tokenizer = AutoTokenizer.from_pretrained(SEQ2SEQ_MODEL_PATH)
-model = AutoModelForSeq2SeqLM.from_pretrained(SEQ2SEQ_MODEL_PATH)
+tokenizer = AutoTokenizer.from_pretrained(SEQ2SEQ_MODEL)
+model = AutoModelForSeq2SeqLM.from_pretrained(SEQ2SEQ_MODEL)
 
 # Load configuration settings from the config.json file
 try:
@@ -38,6 +39,8 @@ except Exception as e:
 
 
 # Function to clean and sanitize email headers
+from email.header import decode_header
+
 def clean_header(header, value):
     """
     Cleans and sanitizes email header values by removing invalid characters.
@@ -46,8 +49,12 @@ def clean_header(header, value):
         return None
     # Remove linefeeds and carriage returns
     value = value.replace("\n", "").replace("\r", "")
+    # Decode the header value if it is encoded
+    decoded_value = decode_header(value)[0][0]
+    if isinstance(decoded_value, bytes):
+        decoded_value = decoded_value.decode("utf-8", errors="replace")
     # Replace invalid characters with a placeholder
-    value = re.sub(r"[^\x20-\x7E]", "", value)  # Keep only printable ASCII characters
+    value = re.sub(r"[^\x20-\x7E]", "", decoded_value)  # Keep only printable ASCII characters
     if not value:
         logging.warning(f"Header '{header}' was empty after sanitization.")
         return None
@@ -69,7 +76,12 @@ def convert_to_email_message(msg):
                 logging.warning(
                     f"Skipping header '{header}' due to invalid characters."
                 )
-        new_msg.set_payload(msg.get_payload())
+        if msg.is_multipart():
+            new_msg.make_mixed()  # Create a new multipart message
+            for part in msg.iter_parts():
+                new_msg.attach(part.get_content_type())
+        else:
+            new_msg.set_content(msg.get_content())
         msg = new_msg
     return msg
 
@@ -93,7 +105,8 @@ def summarize_important_emails(mail):
                         msg
                     )  # Convert the msg to EmailMessage
                     subject = msg["Subject"]
-                    body = get_email_body(msg)  # Function to extract the email body
+                    body = get_email_body(msg, content_type="text/plain")  # Function to extract the plain text email body
+                    html_body = get_email_body(msg, content_type="text/html")  # Function to extract the HTML email body
 
                     # Ensure that body is a string before slicing
                     if isinstance(body, str):
@@ -167,7 +180,7 @@ def detect_email_sentiment(mail):
                                 "Mixed",
                                 "Unknown",
                                 "Error",
-                                "Not Applicable",
+                                "Not Applicable"
                             ],
                         )
                         logging.info(
@@ -177,30 +190,24 @@ def detect_email_sentiment(mail):
         logging.error(f"Failed to detect email sentiment: {str(e)}")
 
 
-def get_email_body(msg):
+def get_email_body(msg, content_type="text/plain"):
     if isinstance(msg, EmailMessage):
-        body = []
         if msg.is_multipart():
+            parts = []
             for part in msg.iter_parts():
-                if part.get_content_type() == "text/plain":
-                    try:
-                        payload = part.get_payload(decode=True)
-                        if isinstance(payload, bytes):
-                            body.append(payload.decode("utf-8", errors="replace"))
-                        else:
-                            body.append(payload)
-                    except Exception as e:
-                        logging.error(f"Failed to decode part: {str(e)}")
+                if part.get_content_type() == content_type:
+                    payload = part.get_payload(decode=True)
+                    if isinstance(payload, bytes):
+                        payload = payload.decode("utf-8", errors="replace")
+                    parts.append(payload)
+            return "\n".join(parts)
         else:
-            try:
-                payload = msg.get_payload(decode=True)
-                if isinstance(payload, bytes):
-                    body.append(payload.decode("utf-8", errors="replace"))
-                else:
-                    body.append(payload)
-            except Exception as e:
-                logging.error(f"Failed to decode payload: {str(e)}")
-        return "\n".join(body)
+            payload = msg.get_payload(decode=True)
+            return (
+                payload.decode("utf-8", errors="replace")
+                if isinstance(payload, bytes)
+                else payload
+            )
     else:
         raise TypeError(
             f"msg is not an instance of EmailMessage, actual type: {type(msg).__name__}"
